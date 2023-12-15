@@ -2,7 +2,7 @@
 
 julia_version = "1.9.4"
 manifest_format = "2.0"
-project_hash = "ff502f9c3d0bb275b7163455c756ceca20f2b336"
+project_hash = "89591e150e97bf234f662b464296ee9cf0ab6764"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -291,7 +291,7 @@ version = "0.1.2"
 deps = ["Atomix", "ChainRulesCore", "KernelAbstractions"]
 path = "../../DiffImageRotation.jl"
 uuid = "cb1f95eb-7c3a-45bc-9e18-5c07f1beaacd"
-version = "0.1.0"
+version = "0.2.1"
 
 [[deps.DiffResults]]
 deps = ["StaticArraysCore"]
