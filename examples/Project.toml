@@ -1,0 +1,13 @@
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+DiffImageRotation = "cb1f95eb-7c3a-45bc-9e18-5c07f1beaacd"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
+ImageShow = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
+IndexFunArrays = "613c443e-d742-454e-bfc6-1d7f8dd76566"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+RadonKA = "86de8297-835b-47df-b249-c04e8db91db5"
+SwissVAMyKnife = "fafdf525-54c7-48ec-ae29-528bd4cccfab"
+WaveOpticsPropagation = "c4c7a1f9-3adc-4a73-843a-d378b6c86436"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
