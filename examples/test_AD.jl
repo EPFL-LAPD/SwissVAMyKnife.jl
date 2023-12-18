@@ -53,27 +53,40 @@ end;
 # ╔═╡ e9e23d62-0779-4d63-8485-2ff5677cd8ba
 simshow(Array(target[:, 20, :]))
 
+# ╔═╡ 067d9ac3-4bdc-44e5-87c2-e0936cbcd8f8
+sum(isone.(target))
+
 # ╔═╡ 226dfbbe-2277-4ffe-b15c-8f2e1d434a86
 simshow(Array(target[:, :, 25]))
 
 # ╔═╡ a628b053-7d6a-4aac-80b8-1e560a0e8a49
-function make_fg!(fwd, AS_abs2, angles, target, loss=:L2)
+function make_fg!(fwd, AS_abs2, angles, target, loss=:L2,
+				  thresholds=(0.7, 0.8))
+	
 	mask = togoc(rr2(eltype(target), (size(target)[1:2]..., )) .<= (size(target, 1) ÷ 2  - 1)^2)
 
 	mask = reshape(mask, (1, size(target, 1), size(target, 2)))
-    L2 = let target=target, fwd=fwd, AS_abs2=AS_abs2, angles=angles, mask=mask 
+
+	notobject = iszero.(target)
+	isobject = isone.(target)
+	
+    L2 = let target=target, fwd=fwd, AS_abs2=AS_abs2, angles=angles, mask=mask
         function L2(x)
             return sum(abs2, (fwd(x, AS_abs2, angles) .- target) .* mask)
 		end
     end
 
-    f = let 
-        if loss == :L2
-            L2
-        end
+    L_VAM = let target=target, fwd=fwd, AS_abs2=AS_abs2, angles=angles, mask=mask, notobject=notobject, isobject=isobject
+        function L_VAM(x)
+			f = fwd(x, AS_abs2, angles)# .* mask
+			#f = f ./ maximum(f)
+			return sum(abs2, max.(0, thresholds[2] .- f[isobject])) .+ sum(max.(0, f[notobject] .- thresholds[1]))
+		end
     end
 
-    g! = let f=f
+    f = L_VAM
+
+    g! = let f=L_VAM
         function g!(G, rec)
             if !isnothing(G)
                 return G .= Zygote.gradient(f, rec)[1]
@@ -82,6 +95,9 @@ function make_fg!(fwd, AS_abs2, angles, target, loss=:L2)
     end
     return f, g!
 end
+
+# ╔═╡ e6df8ac8-35b5-455e-8c5a-6195f153e4e1
+gradient(x -> sum(max.(0, x .- 0.5) .+ sum(max.(0, x))), rand(10,10))
 
 # ╔═╡ ebf4598b-ab9d-415f-95d7-7e19731ae966
 function fwd(x, AS_abs2, angles)
@@ -112,7 +128,7 @@ function ChainRulesCore.rrule(::typeof(fwd), x, AS_abs2, angles)
 			)[2]
 			#@show typeof(tmp)
 			#@show size(x), angle, size(tmp)
-			grad[:, :, i] .+= tmp
+			grad[:, :, i] .= tmp
 		end	
 		return NoTangent(), grad, NoTangent(), NoTangent()
 	end    
@@ -128,11 +144,14 @@ L = 100f-6
 # ╔═╡ d65698b4-f803-4706-ab1e-b905b7983850
 Zygote.gradient(x -> sum(abs2.(1 .+ repeat(x, 1,1,41))), rand(2,3))
 
+# ╔═╡ e36ca93a-3831-4c6b-a903-c1a73e005bfb
+Zygote.refresh()
+
 # ╔═╡ 6e681b2d-8510-4970-b8f8-98840af0988e
 angles = deg2rad.(range(0, 360, 100))
 
 # ╔═╡ 9f0d2df4-e516-4b2e-9361-9cfceb6e262c
-patterns_0 = togoc(ones(Float32, (size(target,1), size(target,2), size(angles, 1))));
+patterns_0 = togoc(zeros(Float32, (size(target,1), size(target,2), size(angles, 1))));
 
 # ╔═╡ 3bc8c469-6e88-4131-a5e1-409dcb447031
 z = togoc(range(0, L, size(patterns_0, 1)));
@@ -161,25 +180,25 @@ AS_abs2(patterns_0[:, :, 1]);
 f, g! = make_fg!(fwd, AS_abs2, angles, target)
 
 # ╔═╡ 3748e3d2-7ebf-496e-83fb-996d6d1a025d
-simshow(Array(target[:, :, 1]))
+simshow(Array(target[:, :, 25]))
 
 # ╔═╡ 00891090-ade5-4b58-8f4f-45177957944b
 fwd(patterns_0, AS_abs2, angles);
 
 # ╔═╡ 95b9ed14-1a62-4f55-b3f2-df9256c4cefe
-gradient(x -> sum(fwd(x, AS_abs2, angles)), patterns_0)
+sum(gradient(x -> sum(fwd(x, AS_abs2, angles)), patterns_0)[1])
+
+# ╔═╡ 3cf7ca46-fe1a-4c0e-81f4-eb836acb5329
+
 
 # ╔═╡ bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
-CUDA.@time CUDA.@sync f(patterns_0);
+CUDA.@time CUDA.@sync f(patterns_0)
 
 # ╔═╡ 542f517b-81ae-44e3-9cd5-32377153700f
 CUDA.@time CUDA.@sync g!(copy(patterns_0), patterns_0);
 
 # ╔═╡ 318c0c63-ab4f-4b80-9029-508dddfa0821
-
-
-# ╔═╡ 1258e403-ff95-4532-8d47-bf219c2c76b3
-
+sum(g!(zero.(patterns_0), patterns_0))
 
 # ╔═╡ 2f790a45-7594-4dc2-a06f-6ff48355fc42
 Zygote.refresh()
@@ -189,20 +208,20 @@ md"# Optimize"
 
 # ╔═╡ d2fdb8ae-ad9a-43ef-84ab-f3e5f15337b0
 CUDA.@time res = Optim.optimize(f, g!, patterns_0, ConjugateGradient(),
-                                 Optim.Options(iterations = 10,  
+                                 Optim.Options(iterations = 2,  
                                                store_trace=true))
 
 # ╔═╡ 7e992329-d52b-415f-a305-35288a8dd1f7
 @bind iangle Slider(1:size(angles, 1), show_value=true)
 
 # ╔═╡ ce946b50-aa9b-418d-9fdd-fa8d3d1ae315
-simshow(abs.(Array(res.minimizer[:, :, iangle])), γ=0.2)
+simshow(abs.(Array(res.minimizer[:, :, iangle])), γ=0.5)
 
 # ╔═╡ b7729629-54c5-4cef-b94b-cce2c9b7da86
 res.minimizer
 
 # ╔═╡ 580b6b33-2364-4764-a226-6554a3c2e184
-simshow(Array(fwd(res.minimizer, AS_abs2, angles)[:, :, 25]), γ=0.3)
+simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]), γ=0.6)
 
 # ╔═╡ d4485912-e3d3-4078-8b6f-c4e0a33ca3e7
 b = [1.0 2; 3 4]
@@ -232,8 +251,10 @@ cos.(b) .* (2 .* b)
 # ╠═35d0680c-f075-4113-8720-bf447b8f0b3d
 # ╠═87668471-f7e2-4ace-a95a-82a3f089b447
 # ╠═e9e23d62-0779-4d63-8485-2ff5677cd8ba
+# ╠═067d9ac3-4bdc-44e5-87c2-e0936cbcd8f8
 # ╠═226dfbbe-2277-4ffe-b15c-8f2e1d434a86
 # ╠═a628b053-7d6a-4aac-80b8-1e560a0e8a49
+# ╠═e6df8ac8-35b5-455e-8c5a-6195f153e4e1
 # ╠═ebf4598b-ab9d-415f-95d7-7e19731ae966
 # ╠═140082c8-cbe8-40d2-9e1f-a076db805156
 # ╠═8a37ec9d-b984-4c7b-b0a7-435305806366
@@ -247,16 +268,17 @@ cos.(b) .* (2 .* b)
 # ╠═d65698b4-f803-4706-ab1e-b905b7983850
 # ╠═bfec391c-7fad-44ac-9d9e-b4dc923427af
 # ╠═b216f6bc-25dd-4b98-b744-d8f88e0567c6
+# ╠═e36ca93a-3831-4c6b-a903-c1a73e005bfb
 # ╠═6e681b2d-8510-4970-b8f8-98840af0988e
 # ╠═eb53a1a9-5fc9-4e65-a326-0a9c816dcb71
 # ╠═e3f9bf50-26de-467e-b4f3-54eb753278ab
 # ╠═3748e3d2-7ebf-496e-83fb-996d6d1a025d
 # ╠═00891090-ade5-4b58-8f4f-45177957944b
 # ╠═95b9ed14-1a62-4f55-b3f2-df9256c4cefe
+# ╠═3cf7ca46-fe1a-4c0e-81f4-eb836acb5329
 # ╠═bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
 # ╠═542f517b-81ae-44e3-9cd5-32377153700f
 # ╠═318c0c63-ab4f-4b80-9029-508dddfa0821
-# ╠═1258e403-ff95-4532-8d47-bf219c2c76b3
 # ╠═2f790a45-7594-4dc2-a06f-6ff48355fc42
 # ╟─41897c92-462e-479c-94ee-5a8f60503343
 # ╠═d2fdb8ae-ad9a-43ef-84ab-f3e5f15337b0
