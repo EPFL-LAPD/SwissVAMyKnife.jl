@@ -4,6 +4,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ 62673cc2-9b5b-11ee-2687-f3c65e3a77fa
 begin
 	using Pkg
@@ -16,6 +26,9 @@ using ChainRulesCore
 
 # ╔═╡ af984a5b-7834-4823-b93a-c5d07e3f95a4
 using CUDA, WaveOpticsPropagation, Zygote, Optim, DiffImageRotation, ImageShow, IndexFunArrays
+
+# ╔═╡ e689c752-0c65-44de-b998-b6ecbb3b949c
+using PlutoUI
 
 # ╔═╡ 66ca565d-83ca-46f2-a13d-9667c0d2aeee
 use_CUDA = Ref(true && CUDA.functional())
@@ -32,24 +45,25 @@ togoc(x) = use_CUDA[] ? CuArray(x) : x
 # ╔═╡ 87668471-f7e2-4ace-a95a-82a3f089b447
 begin
 	target = togoc(zeros(Float32, 64, 64, 64));
-	target[:, 20:23, :] .= 1;
+	target[20:30, 20:30, 20:30] .= 1;
 
-	target = imrotate(target, deg2rad(50))
+	#target = imrotate(target, deg2rad(50))
 end;
 
 # ╔═╡ e9e23d62-0779-4d63-8485-2ff5677cd8ba
-simshow(Array(target[:, :, 16]))
+simshow(Array(target[:, 20, :]))
 
 # ╔═╡ 226dfbbe-2277-4ffe-b15c-8f2e1d434a86
-
+simshow(Array(target[:, :, 25]))
 
 # ╔═╡ a628b053-7d6a-4aac-80b8-1e560a0e8a49
 function make_fg!(fwd, AS_abs2, angles, target, loss=:L2)
 	mask = togoc(rr2(eltype(target), (size(target)[1:2]..., )) .<= (size(target, 1) ÷ 2  - 1)^2)
-	
+
+	mask = reshape(mask, (1, size(target, 1), size(target, 2)))
     L2 = let target=target, fwd=fwd, AS_abs2=AS_abs2, angles=angles, mask=mask 
         function L2(x)
-            return sum(abs2, (fwd(x, AS_abs2, angles) .- target))
+            return sum(abs2, (fwd(x, AS_abs2, angles) .- target) .* mask)
 		end
     end
 
@@ -76,7 +90,7 @@ function fwd(x, AS_abs2, angles)
 	for (i, angle) in enumerate(angles)		
 		tmp = AS_abs2(x[:, :, i])
 		size(tmp), size(intensity)	
-		intensity .+= imrotate(tmp, angle)
+		intensity .+= permutedims(imrotate(permutedims(tmp, (2, 3, 1)), angle), (3, 1, 2))
 	end	
 	return intensity
 end
@@ -94,9 +108,9 @@ function ChainRulesCore.rrule(::typeof(fwd), x, AS_abs2, angles)
 		
 		for (i, angle) in enumerate(angles)		
 			tmp::CuArray = Zygote._pullback(AS_abs2, x[:, :, i])[2](
-					imrotate(ȳ, angle, adjoint=true)
+					permutedims(imrotate(permutedims(ȳ, (2, 3, 1)), angle, adjoint=true), (3, 1, 2))
 			)[2]
-			@show typeof(tmp)
+			#@show typeof(tmp)
 			#@show size(x), angle, size(tmp)
 			grad[:, :, i] .+= tmp
 		end	
@@ -115,7 +129,7 @@ L = 100f-6
 Zygote.gradient(x -> sum(abs2.(1 .+ repeat(x, 1,1,41))), rand(2,3))
 
 # ╔═╡ 6e681b2d-8510-4970-b8f8-98840af0988e
-angles = deg2rad.([0f0, 90f0])
+angles = deg2rad.(range(0, 360, 100))
 
 # ╔═╡ 9f0d2df4-e516-4b2e-9361-9cfceb6e262c
 patterns_0 = togoc(ones(Float32, (size(target,1), size(target,2), size(angles, 1))));
@@ -127,7 +141,7 @@ z = togoc(range(0, L, size(patterns_0, 1)));
 AS, _ = Angular_Spectrum(repeat(0im .+ patterns_0[:, :, 1], 1, 1, size(target, 1)), z, λ, L)
 
 # ╔═╡ eb53a1a9-5fc9-4e65-a326-0a9c816dcb71
-AS_abs2(x) = abs2.(AS(repeat(0im .+ x, 1, 1, size(target, 1)))[1])
+AS_abs2(x) = abs2.(AS(repeat(0im .+ abs.(x), 1, 1, size(target, 1)))[1])
 
 # ╔═╡ 14db8343-a033-4241-b16f-e46de1e59a27
 Zygote._pullback(AS_abs2, patterns_0[:, :, 1])[2]#(
@@ -159,7 +173,7 @@ gradient(x -> sum(fwd(x, AS_abs2, angles)), patterns_0)
 CUDA.@time CUDA.@sync f(patterns_0);
 
 # ╔═╡ 542f517b-81ae-44e3-9cd5-32377153700f
-g!(copy(patterns_0), patterns_0);
+CUDA.@time CUDA.@sync g!(copy(patterns_0), patterns_0);
 
 # ╔═╡ 318c0c63-ab4f-4b80-9029-508dddfa0821
 
@@ -174,15 +188,21 @@ Zygote.refresh()
 md"# Optimize"
 
 # ╔═╡ d2fdb8ae-ad9a-43ef-84ab-f3e5f15337b0
-CUDA.@time res = Optim.optimize(f, g!, rec0, ConjugateGradient(),
+CUDA.@time res = Optim.optimize(f, g!, patterns_0, ConjugateGradient(),
                                  Optim.Options(iterations = 10,  
                                                store_trace=true))
 
+# ╔═╡ 7e992329-d52b-415f-a305-35288a8dd1f7
+@bind iangle Slider(1:size(angles, 1), show_value=true)
+
 # ╔═╡ ce946b50-aa9b-418d-9fdd-fa8d3d1ae315
-simshow(Array(res.minimizer[:, :, 1]))
+simshow(abs.(Array(res.minimizer[:, :, iangle])), γ=0.2)
+
+# ╔═╡ b7729629-54c5-4cef-b94b-cce2c9b7da86
+res.minimizer
 
 # ╔═╡ 580b6b33-2364-4764-a226-6554a3c2e184
-simshow(Array(fwd(res.minimizer)[:, :, 20]))
+simshow(Array(fwd(res.minimizer, AS_abs2, angles)[:, :, 25]), γ=0.3)
 
 # ╔═╡ d4485912-e3d3-4078-8b6f-c4e0a33ca3e7
 b = [1.0 2; 3 4]
@@ -205,6 +225,7 @@ cos.(b) .* (2 .* b)
 # ╠═62673cc2-9b5b-11ee-2687-f3c65e3a77fa
 # ╠═9b0fe39d-d340-40bf-bdb7-22a57bae1885
 # ╠═af984a5b-7834-4823-b93a-c5d07e3f95a4
+# ╠═e689c752-0c65-44de-b998-b6ecbb3b949c
 # ╠═66ca565d-83ca-46f2-a13d-9667c0d2aeee
 # ╠═c84b69d7-086c-445b-afe0-9724b780d806
 # ╠═cd884189-1d50-4468-ad69-5a679a6a81af
@@ -239,7 +260,9 @@ cos.(b) .* (2 .* b)
 # ╠═2f790a45-7594-4dc2-a06f-6ff48355fc42
 # ╟─41897c92-462e-479c-94ee-5a8f60503343
 # ╠═d2fdb8ae-ad9a-43ef-84ab-f3e5f15337b0
+# ╠═7e992329-d52b-415f-a305-35288a8dd1f7
 # ╠═ce946b50-aa9b-418d-9fdd-fa8d3d1ae315
+# ╠═b7729629-54c5-4cef-b94b-cce2c9b7da86
 # ╠═580b6b33-2364-4764-a226-6554a3c2e184
 # ╠═d4485912-e3d3-4078-8b6f-c4e0a33ca3e7
 # ╠═d8c28969-27e8-4c95-8a19-3469ae5f0e2f
