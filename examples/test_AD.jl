@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.27
 
 using Markdown
 using InteractiveUtils
@@ -44,12 +44,12 @@ simshow(Array(target[:, :, 16]))
 
 
 # ╔═╡ a628b053-7d6a-4aac-80b8-1e560a0e8a49
-function make_fg!(fwd, target, loss=:L2)
+function make_fg!(fwd, AS_abs2, angles, target, loss=:L2)
 	mask = togoc(rr2(eltype(target), (size(target)[1:2]..., )) .<= (size(target, 1) ÷ 2  - 1)^2)
 	
-    L2 = let target=target, fwd=fwd
+    L2 = let target=target, fwd=fwd, AS_abs2=AS_abs2, angles=angles, mask=mask 
         function L2(x)
-            return sum(abs2, (fwd(x) .- target) .* mask)
+            return sum(abs2, (fwd(x, AS_abs2, angles) .- target))
 		end
     end
 
@@ -71,25 +71,39 @@ end
 
 # ╔═╡ ebf4598b-ab9d-415f-95d7-7e19731ae966
 function fwd(x, AS_abs2, angles)
-		
-		tmp = AS_abs2(x[:, :, 1])
-		intensity = imrotate(tmp, angles[begin])
-
-		for (i, angle) in enumerat(angles[begin+1:end])		
-			tmp = AS_abs2(x[:, :, i])
-			intensity .+= imrotate(intensity, angles[begin])
-		end	
-		return intensity
+	intensity = similar(x, real(eltype(x)), (size(x, 1), size(x, 2), size(x, 2)))
+	fill!(intensity, 0)
+	for (i, angle) in enumerate(angles)		
+		tmp = AS_abs2(x[:, :, i])
+		size(tmp), size(intensity)	
+		intensity .+= imrotate(tmp, angle)
+	end	
+	return intensity
 end
 
 # ╔═╡ 140082c8-cbe8-40d2-9e1f-a076db805156
 Zygote._pullback(x -> abs2.(x), [1 2; 3 4])[2](rand((2,2)))
 
-# ╔═╡ 07ae5f72-55af-4d7b-8a54-aad82b5139b5
-size(target)
-
-# ╔═╡ 9f0d2df4-e516-4b2e-9361-9cfceb6e262c
-rec0 = togoc(ones(ComplexF32, (size(target,1), size(target,2), 1)));
+# ╔═╡ 8a37ec9d-b984-4c7b-b0a7-435305806366
+function ChainRulesCore.rrule(::typeof(fwd), x, AS_abs2, angles)
+	res = fwd(x, AS_abs2, angles)
+	
+	function pb_rotate(ȳ)
+		grad = similar(x, real(eltype(x)), size(x, 1), size(x, 2), size(angles, 1))
+		fill!(grad, 0)
+		
+		for (i, angle) in enumerate(angles)		
+			tmp::CuArray = Zygote._pullback(AS_abs2, x[:, :, i])[2](
+					imrotate(ȳ, angle, adjoint=true)
+			)[2]
+			@show typeof(tmp)
+			#@show size(x), angle, size(tmp)
+			grad[:, :, i] .+= tmp
+		end	
+		return NoTangent(), grad, NoTangent(), NoTangent()
+	end    
+	return res, pb_rotate
+ end
 
 # ╔═╡ 1ae5c61f-d34d-4618-8679-c28ecbb757bf
 L = 100f-6
@@ -97,45 +111,64 @@ L = 100f-6
 # ╔═╡ eaf74b38-3aae-4651-8083-930ff3ae8eed
 λ = 405f-9
 
+# ╔═╡ d65698b4-f803-4706-ab1e-b905b7983850
+Zygote.gradient(x -> sum(abs2.(1 .+ repeat(x, 1,1,41))), rand(2,3))
+
+# ╔═╡ 6e681b2d-8510-4970-b8f8-98840af0988e
+angles = deg2rad.([0f0, 90f0])
+
+# ╔═╡ 9f0d2df4-e516-4b2e-9361-9cfceb6e262c
+patterns_0 = togoc(ones(Float32, (size(target,1), size(target,2), size(angles, 1))));
+
 # ╔═╡ 3bc8c469-6e88-4131-a5e1-409dcb447031
-z = togoc(range(0, L, size(rec0, 1)));
+z = togoc(range(0, L, size(patterns_0, 1)));
 
 # ╔═╡ b271f58d-8195-4cc2-8682-160bc531c744
-AS, _ = Angular_Spectrum(repeat(rec0, 1, 1, size(target, 1)), z, λ, L)
+AS, _ = Angular_Spectrum(repeat(0im .+ patterns_0[:, :, 1], 1, 1, size(target, 1)), z, λ, L)
 
 # ╔═╡ eb53a1a9-5fc9-4e65-a326-0a9c816dcb71
-AS_abs2(x) = abs2.(AS(repeat(x, 1, 1, size(x, 1)))[1])
+AS_abs2(x) = abs2.(AS(repeat(0im .+ x, 1, 1, size(target, 1)))[1])
 
-# ╔═╡ 8a37ec9d-b984-4c7b-b0a7-435305806366
- # is this rrule good? 
- # no @thunk and @unthunk
- function ChainRulesCore.rrule(::typeof(fwd), x, AS, angles)
-     res = fwd(x, AS, angles)
-	 
-     function pb_rotate(ȳ)
-		grad = Zygote._pullback(AS_abs2, AS_abs2(x[:, :, 1]))[2](ȳ)
-		intensity = imrotate(tmp, angles[begin])
-		 
-		for (i, angle) in enumerat(angles[begin+1:end])		
-			tmp = AS_abs2(x[:, :, i])
-			intensity .+= imrotate(intensity, angles[begin])
-		end	
-         return NoTangent(), ad, NoTangent(), NoTangent()
-     end    
-     return res, pb_rotate
- end
+# ╔═╡ 14db8343-a033-4241-b16f-e46de1e59a27
+Zygote._pullback(AS_abs2, patterns_0[:, :, 1])[2]#(
+					#imrotate(CUDA.rand(64,64,64), 0.1f0, adjoint=true)
+					#)
+
+# ╔═╡ 0254053e-2859-4342-b620-6bd31805ce00
+Zygote.gradient(x -> sum(AS_abs2(x)), patterns_0[:, :, 1])
+
+# ╔═╡ bfec391c-7fad-44ac-9d9e-b4dc923427af
+AS_abs2(patterns_0[:, :, 1]);
+
+# ╔═╡ b216f6bc-25dd-4b98-b744-d8f88e0567c6
+AS_abs2(patterns_0[:, :, 1]);
 
 # ╔═╡ e3f9bf50-26de-467e-b4f3-54eb753278ab
-f, g! = make_fg!(fwd, target)
+f, g! = make_fg!(fwd, AS_abs2, angles, target)
 
 # ╔═╡ 3748e3d2-7ebf-496e-83fb-996d6d1a025d
 simshow(Array(target[:, :, 1]))
 
-# ╔═╡ bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
-CUDA.@time CUDA.@sync f(rec0)
+# ╔═╡ 00891090-ade5-4b58-8f4f-45177957944b
+fwd(patterns_0, AS_abs2, angles);
 
-# ╔═╡ 38d86ed0-d075-409a-a561-96eb69b57a20
-CUDA.@time CUDA.@sync gradient(f, rec0)[1]
+# ╔═╡ 95b9ed14-1a62-4f55-b3f2-df9256c4cefe
+gradient(x -> sum(fwd(x, AS_abs2, angles)), patterns_0)
+
+# ╔═╡ bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
+CUDA.@time CUDA.@sync f(patterns_0);
+
+# ╔═╡ 542f517b-81ae-44e3-9cd5-32377153700f
+g!(copy(patterns_0), patterns_0);
+
+# ╔═╡ 318c0c63-ab4f-4b80-9029-508dddfa0821
+
+
+# ╔═╡ 1258e403-ff95-4532-8d47-bf219c2c76b3
+
+
+# ╔═╡ 2f790a45-7594-4dc2-a06f-6ff48355fc42
+Zygote.refresh()
 
 # ╔═╡ 41897c92-462e-479c-94ee-5a8f60503343
 md"# Optimize"
@@ -150,6 +183,23 @@ simshow(Array(res.minimizer[:, :, 1]))
 
 # ╔═╡ 580b6b33-2364-4764-a226-6554a3c2e184
 simshow(Array(fwd(res.minimizer)[:, :, 20]))
+
+# ╔═╡ d4485912-e3d3-4078-8b6f-c4e0a33ca3e7
+b = [1.0 2; 3 4]
+
+# ╔═╡ d8c28969-27e8-4c95-8a19-3469ae5f0e2f
+Zygote.gradient(x -> sum(sin.(abs2.(x .* 5))), b)[1] 
+
+# ╔═╡ 4f86cfad-26c8-4baf-a47f-3539d8e82694
+cos.(b) .* (2 .* b)
+
+# ╔═╡ e7fa025e-3985-4202-bb67-88c3b7c79d47
+2 .* b
+
+# ╔═╡ cf336478-3b1a-4546-8b96-b6784b16ab69
+  Δu = real(ΔΩ)
+                return (NoTangent(), 2Δu*z)
+            end
 
 # ╔═╡ Cell order:
 # ╠═62673cc2-9b5b-11ee-2687-f3c65e3a77fa
@@ -166,18 +216,33 @@ simshow(Array(fwd(res.minimizer)[:, :, 20]))
 # ╠═ebf4598b-ab9d-415f-95d7-7e19731ae966
 # ╠═140082c8-cbe8-40d2-9e1f-a076db805156
 # ╠═8a37ec9d-b984-4c7b-b0a7-435305806366
-# ╠═07ae5f72-55af-4d7b-8a54-aad82b5139b5
 # ╠═9f0d2df4-e516-4b2e-9361-9cfceb6e262c
 # ╠═1ae5c61f-d34d-4618-8679-c28ecbb757bf
 # ╠═eaf74b38-3aae-4651-8083-930ff3ae8eed
 # ╠═3bc8c469-6e88-4131-a5e1-409dcb447031
 # ╠═b271f58d-8195-4cc2-8682-160bc531c744
+# ╠═14db8343-a033-4241-b16f-e46de1e59a27
+# ╠═0254053e-2859-4342-b620-6bd31805ce00
+# ╠═d65698b4-f803-4706-ab1e-b905b7983850
+# ╠═bfec391c-7fad-44ac-9d9e-b4dc923427af
+# ╠═b216f6bc-25dd-4b98-b744-d8f88e0567c6
+# ╠═6e681b2d-8510-4970-b8f8-98840af0988e
 # ╠═eb53a1a9-5fc9-4e65-a326-0a9c816dcb71
 # ╠═e3f9bf50-26de-467e-b4f3-54eb753278ab
 # ╠═3748e3d2-7ebf-496e-83fb-996d6d1a025d
+# ╠═00891090-ade5-4b58-8f4f-45177957944b
+# ╠═95b9ed14-1a62-4f55-b3f2-df9256c4cefe
 # ╠═bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
-# ╠═38d86ed0-d075-409a-a561-96eb69b57a20
+# ╠═542f517b-81ae-44e3-9cd5-32377153700f
+# ╠═318c0c63-ab4f-4b80-9029-508dddfa0821
+# ╠═1258e403-ff95-4532-8d47-bf219c2c76b3
+# ╠═2f790a45-7594-4dc2-a06f-6ff48355fc42
 # ╟─41897c92-462e-479c-94ee-5a8f60503343
 # ╠═d2fdb8ae-ad9a-43ef-84ab-f3e5f15337b0
 # ╠═ce946b50-aa9b-418d-9fdd-fa8d3d1ae315
 # ╠═580b6b33-2364-4764-a226-6554a3c2e184
+# ╠═d4485912-e3d3-4078-8b6f-c4e0a33ca3e7
+# ╠═d8c28969-27e8-4c95-8a19-3469ae5f0e2f
+# ╠═4f86cfad-26c8-4baf-a47f-3539d8e82694
+# ╠═e7fa025e-3985-4202-bb67-88c3b7c79d47
+# ╠═cf336478-3b1a-4546-8b96-b6784b16ab69
