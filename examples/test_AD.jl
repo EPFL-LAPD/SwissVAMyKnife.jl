@@ -81,7 +81,7 @@ function make_fg!(fwd, AS_abs2, angles, target, loss=:L2,
         function L_VAM(x)
 			f = fwd(x, AS_abs2, angles)# .* mask
 			#f = f ./ maximum(f)
-			return sum(abs2, max.(0, thresholds[2] .- f[isobject])) .+ sum(max.(0, f[notobject] .- thresholds[1]))
+			return sum(max.(0, thresholds[2] .- f[isobject])) .+ sum(max.(0, f[notobject] .- thresholds[1]))
 		end
     end
 
@@ -198,7 +198,10 @@ f, g! = make_fg!(fwd, AS_abs2, angles, target)
 simshow(Array(target[:, :, 25]))
 
 # ╔═╡ 00891090-ade5-4b58-8f4f-45177957944b
-fwd(patterns_0, AS_abs2, angles);
+fwd(patterns_0, AS_abs2, angles) |> size
+
+# ╔═╡ 217481d9-5258-4c5b-9925-14349e61e1fe
+sum(fwd(patterns_0, AS_abs2, angles), dims=(1,2))[:]
 
 # ╔═╡ 95b9ed14-1a62-4f55-b3f2-df9256c4cefe
 sum(gradient(x -> sum(fwd(x, AS_abs2, angles)), patterns_0)[1])
@@ -223,20 +226,20 @@ md"# Optimize"
 
 # ╔═╡ d2fdb8ae-ad9a-43ef-84ab-f3e5f15337b0
 CUDA.@time res = Optim.optimize(f, g!, patterns_0, ConjugateGradient(),
-                                 Optim.Options(iterations = 50,  
+                                 Optim.Options(iterations = 10,  
                                                store_trace=true))
 
 # ╔═╡ 7e992329-d52b-415f-a305-35288a8dd1f7
 @bind iangle Slider(1:size(angles, 1), show_value=true)
 
 # ╔═╡ ce946b50-aa9b-418d-9fdd-fa8d3d1ae315
-simshow(abs.(Array(res.minimizer[:, :, iangle])), γ=1)
+simshow(abs2.(Array(res.minimizer[:, :, iangle])), γ=1)
 
 # ╔═╡ 6760558a-888a-4576-979a-fd6ca2b6126c
 @bind thresh Slider(0.0:0.01:2, show_value=true)
 
 # ╔═╡ 580b6b33-2364-4764-a226-6554a3c2e184
-[simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]), γ=0.6) simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]) .> thresh, γ=0.6)]
+[simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]), γ=1) simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]) .> thresh, γ=1)]
 
 # ╔═╡ d4485912-e3d3-4078-8b6f-c4e0a33ca3e7
 b = [1.0 2; 3 4]
@@ -291,6 +294,7 @@ cos.(b) .* (2 .* b)
 # ╠═e3f9bf50-26de-467e-b4f3-54eb753278ab
 # ╠═3748e3d2-7ebf-496e-83fb-996d6d1a025d
 # ╠═00891090-ade5-4b58-8f4f-45177957944b
+# ╠═217481d9-5258-4c5b-9925-14349e61e1fe
 # ╠═95b9ed14-1a62-4f55-b3f2-df9256c4cefe
 # ╠═3cf7ca46-fe1a-4c0e-81f4-eb836acb5329
 # ╠═bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
