@@ -44,7 +44,7 @@ togoc(x) = use_CUDA[] ? CuArray(x) : x
 
 # ╔═╡ 87668471-f7e2-4ace-a95a-82a3f089b447
 begin
-	target = togoc(zeros(Float32, 100, 100, 100));
+	target = togoc(zeros(Float32, 80, 80, 80));
 	target[30:60, 30:60, 30:60] .= 1;
 	target[35:52, 35:54, 35:56] .= 0;
 
@@ -81,7 +81,7 @@ function make_fg!(fwd, AS_abs2, angles, target, loss=:L2,
         function L_VAM(x)
 			f = fwd(x, AS_abs2, angles)# .* mask
 			#f = f ./ maximum(f)
-			return sum(max.(0, thresholds[2] .- f[isobject])) .+ sum(max.(0, f[notobject] .- thresholds[1]))
+			return sum(abs2, max.(0, thresholds[2] .- f[isobject])) .+ sum(max.(0, f[notobject] .- thresholds[1]))
 		end
     end
 
@@ -117,7 +117,7 @@ function fwd(x, AS_abs2, angles)
 	#return zero.(intensity)
 	for (i, angle) in enumerate(angles)		
 		CUDA.@sync tmp = AS_abs2(x[:, :, i])
-		CUDA.@sync intensity .+= permutedims(imrotate(permutedims(tmp, (2, 3, 1)), angle), (3, 1, 2))
+		CUDA.@sync intensity .+= PermutedDimsArray(imrotate(PermutedDimsArray(tmp, (2, 3, 1)), angle), (3, 1, 2))
 	end	
 	return intensity .* mask
 end
@@ -133,7 +133,7 @@ function ChainRulesCore.rrule(::typeof(fwd), x, AS_abs2, angles)
 
 		for (i, angle) in enumerate(angles)		
 			CUDA.@sync tmp::CuArray = Zygote._pullback(AS_abs2, x[:, :, i])[2](
-					permutedims(imrotate(permutedims(ȳ, (2, 3, 1)), angle, adjoint=true), (3, 1, 2))
+					PermutedDimsArray(imrotate(PermutedDimsArray(ȳ, (2, 3, 1)), angle, adjoint=true), (3, 1, 2))
 			)[2]
 			#@show sum(tmp)
 			#@show size(x), angle, size(tmp)
@@ -164,8 +164,9 @@ angles = deg2rad.(range(0, 360, 100))
 
 # ╔═╡ 9f0d2df4-e516-4b2e-9361-9cfceb6e262c
 begin
-	patterns_0 = togoc(ones(Float32, (size(target,1), size(target,2), size(angles, 1))));
-	#patterns_0[20:40, 20:40, :] .= 1
+	patterns_0 = togoc(zeros(Float32, (size(target,1), size(target,2), size(angles, 1))));
+	# zero init fails somehow
+	patterns_0[begin+6:end-6, begin+6:end-6, :] .= 0.02
 end;
 
 # ╔═╡ 3bc8c469-6e88-4131-a5e1-409dcb447031
@@ -197,6 +198,9 @@ simshow(Array(target[:, :, 25]))
 # ╔═╡ bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
 CUDA.@time CUDA.@sync f(patterns_0)
 
+# ╔═╡ 6dafe6d6-ca7c-4839-ad06-b537ba5b2a83
+CUDA.@time CUDA.@sync imrotate(patterns_0, 0.1f0);
+
 # ╔═╡ 542f517b-81ae-44e3-9cd5-32377153700f
 CUDA.@time CUDA.@sync g!(copy(patterns_0), patterns_0 .+ 1);
 
@@ -210,21 +214,43 @@ Zygote.refresh()
 md"# Optimize"
 
 # ╔═╡ d2fdb8ae-ad9a-43ef-84ab-f3e5f15337b0
+# ╠═╡ disabled = true
+#=╠═╡
 CUDA.@time res = Optim.optimize(f, g!, patterns_0, ConjugateGradient(),
-                                 Optim.Options(iterations = 10,  
+                                 Optim.Options(iterations = 50,  
                                                store_trace=true))
+  ╠═╡ =#
 
 # ╔═╡ 7e992329-d52b-415f-a305-35288a8dd1f7
 @bind iangle Slider(1:size(angles, 1), show_value=true)
 
 # ╔═╡ ce946b50-aa9b-418d-9fdd-fa8d3d1ae315
+#=╠═╡
 simshow(abs2.(Array(res.minimizer[:, :, iangle])), γ=1)
+  ╠═╡ =#
+
+# ╔═╡ 8ed04699-adf2-4546-9515-bda310042945
+#=╠═╡
+sum(res.minimizer) / length(res.minimizer)
+  ╠═╡ =#
 
 # ╔═╡ 6760558a-888a-4576-979a-fd6ca2b6126c
 @bind thresh Slider(0.0:0.01:2, show_value=true)
 
+# ╔═╡ 5a243638-6ccd-410b-8b78-ca3e7b2eee05
+#=╠═╡
+@bind ix Slider(1:size(res.minimizer, 1), show_value=true)
+  ╠═╡ =#
+
+# ╔═╡ ee828eca-0a43-4aed-9d33-c1a09ccfbc01
+#=╠═╡
+fwdd = Array(fwd(res.minimizer, AS_abs2, angles));
+  ╠═╡ =#
+
 # ╔═╡ 580b6b33-2364-4764-a226-6554a3c2e184
-[simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]), γ=1) simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]) .> thresh, γ=1)]
+#=╠═╡
+[simshow(view(fwdd, ix, :, :), γ=1, set_one=false, cmap=:turbo) simshow(view(fwdd, ix, :, :) .> thresh, γ=1, set_one=false, cmap=:turbo)]
+  ╠═╡ =#
 
 # ╔═╡ Cell order:
 # ╠═62673cc2-9b5b-11ee-2687-f3c65e3a77fa
@@ -261,6 +287,7 @@ simshow(abs2.(Array(res.minimizer[:, :, iangle])), γ=1)
 # ╠═3748e3d2-7ebf-496e-83fb-996d6d1a025d
 # ╠═3cf7ca46-fe1a-4c0e-81f4-eb836acb5329
 # ╠═bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
+# ╠═6dafe6d6-ca7c-4839-ad06-b537ba5b2a83
 # ╠═542f517b-81ae-44e3-9cd5-32377153700f
 # ╠═318c0c63-ab4f-4b80-9029-508dddfa0821
 # ╠═2f790a45-7594-4dc2-a06f-6ff48355fc42
@@ -268,5 +295,8 @@ simshow(abs2.(Array(res.minimizer[:, :, iangle])), γ=1)
 # ╠═d2fdb8ae-ad9a-43ef-84ab-f3e5f15337b0
 # ╠═7e992329-d52b-415f-a305-35288a8dd1f7
 # ╠═ce946b50-aa9b-418d-9fdd-fa8d3d1ae315
+# ╠═8ed04699-adf2-4546-9515-bda310042945
 # ╠═6760558a-888a-4576-979a-fd6ca2b6126c
+# ╠═5a243638-6ccd-410b-8b78-ca3e7b2eee05
 # ╠═580b6b33-2364-4764-a226-6554a3c2e184
+# ╠═ee828eca-0a43-4aed-9d33-c1a09ccfbc01
