@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -112,12 +112,12 @@ end
 
 # ╔═╡ ebf4598b-ab9d-415f-95d7-7e19731ae966
 function fwd(x, AS_abs2, angles)
-	intensity = similar(x, real(eltype(x)), (size(x, 1), size(x, 2), size(x, 2)))
+	intensity = copy(similar(x, real(eltype(x)), (size(x, 1), size(x, 2), size(x, 2))))
 	fill!(intensity, 0)
+	#return zero.(intensity)
 	for (i, angle) in enumerate(angles)		
-		tmp = AS_abs2(x[:, :, i])
-		size(tmp), size(intensity)	
-		intensity .+= permutedims(imrotate(permutedims(tmp, (2, 3, 1)), angle), (3, 1, 2))
+		CUDA.@sync tmp = AS_abs2(x[:, :, i])
+		CUDA.@sync intensity .+= permutedims(imrotate(permutedims(tmp, (2, 3, 1)), angle), (3, 1, 2))
 	end	
 	return intensity .* mask
 end
@@ -132,7 +132,7 @@ function ChainRulesCore.rrule(::typeof(fwd), x, AS_abs2, angles)
 		#@show sum(ȳ)
 
 		for (i, angle) in enumerate(angles)		
-			tmp::CuArray = Zygote._pullback(AS_abs2, x[:, :, i])[2](
+			CUDA.@sync tmp::CuArray = Zygote._pullback(AS_abs2, x[:, :, i])[2](
 					permutedims(imrotate(permutedims(ȳ, (2, 3, 1)), angle, adjoint=true), (3, 1, 2))
 			)[2]
 			#@show sum(tmp)
@@ -166,7 +166,7 @@ angles = deg2rad.(range(0, 360, 100))
 begin
 	patterns_0 = togoc(ones(Float32, (size(target,1), size(target,2), size(angles, 1))));
 	#patterns_0[20:40, 20:40, :] .= 1
-end
+end;
 
 # ╔═╡ 3bc8c469-6e88-4131-a5e1-409dcb447031
 z = togoc(range(0, L, size(patterns_0, 1)));
@@ -185,26 +185,11 @@ Zygote._pullback(AS_abs2, patterns_0[:, :, 1])[2]#(
 # ╔═╡ 0254053e-2859-4342-b620-6bd31805ce00
 Zygote.gradient(x -> sum(AS_abs2(x)), patterns_0[:, :, 1])
 
-# ╔═╡ bfec391c-7fad-44ac-9d9e-b4dc923427af
-AS_abs2(patterns_0[:, :, 1]);
-
-# ╔═╡ b216f6bc-25dd-4b98-b744-d8f88e0567c6
-AS_abs2(patterns_0[:, :, 1]);
-
 # ╔═╡ e3f9bf50-26de-467e-b4f3-54eb753278ab
 f, g! = make_fg!(fwd, AS_abs2, angles, target)
 
 # ╔═╡ 3748e3d2-7ebf-496e-83fb-996d6d1a025d
 simshow(Array(target[:, :, 25]))
-
-# ╔═╡ 00891090-ade5-4b58-8f4f-45177957944b
-fwd(patterns_0, AS_abs2, angles) |> size
-
-# ╔═╡ 217481d9-5258-4c5b-9925-14349e61e1fe
-sum(fwd(patterns_0, AS_abs2, angles), dims=(1,2))[:]
-
-# ╔═╡ 95b9ed14-1a62-4f55-b3f2-df9256c4cefe
-sum(gradient(x -> sum(fwd(x, AS_abs2, angles)), patterns_0)[1])
 
 # ╔═╡ 3cf7ca46-fe1a-4c0e-81f4-eb836acb5329
 
@@ -241,23 +226,6 @@ simshow(abs2.(Array(res.minimizer[:, :, iangle])), γ=1)
 # ╔═╡ 580b6b33-2364-4764-a226-6554a3c2e184
 [simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]), γ=1) simshow(Array(fwd(res.minimizer, AS_abs2, angles)[25, :, :]) .> thresh, γ=1)]
 
-# ╔═╡ d4485912-e3d3-4078-8b6f-c4e0a33ca3e7
-b = [1.0 2; 3 4]
-
-# ╔═╡ d8c28969-27e8-4c95-8a19-3469ae5f0e2f
-Zygote.gradient(x -> sum(sin.(abs2.(x .* 5))), b)[1] 
-
-# ╔═╡ 4f86cfad-26c8-4baf-a47f-3539d8e82694
-cos.(b) .* (2 .* b)
-
-# ╔═╡ e7fa025e-3985-4202-bb67-88c3b7c79d47
-2 .* b
-
-# ╔═╡ cf336478-3b1a-4546-8b96-b6784b16ab69
-  Δu = real(ΔΩ)
-                return (NoTangent(), 2Δu*z)
-            end
-
 # ╔═╡ Cell order:
 # ╠═62673cc2-9b5b-11ee-2687-f3c65e3a77fa
 # ╠═9b0fe39d-d340-40bf-bdb7-22a57bae1885
@@ -286,16 +254,11 @@ cos.(b) .* (2 .* b)
 # ╠═14db8343-a033-4241-b16f-e46de1e59a27
 # ╠═0254053e-2859-4342-b620-6bd31805ce00
 # ╠═d65698b4-f803-4706-ab1e-b905b7983850
-# ╠═bfec391c-7fad-44ac-9d9e-b4dc923427af
-# ╠═b216f6bc-25dd-4b98-b744-d8f88e0567c6
 # ╠═e36ca93a-3831-4c6b-a903-c1a73e005bfb
 # ╠═6e681b2d-8510-4970-b8f8-98840af0988e
 # ╠═eb53a1a9-5fc9-4e65-a326-0a9c816dcb71
 # ╠═e3f9bf50-26de-467e-b4f3-54eb753278ab
 # ╠═3748e3d2-7ebf-496e-83fb-996d6d1a025d
-# ╠═00891090-ade5-4b58-8f4f-45177957944b
-# ╠═217481d9-5258-4c5b-9925-14349e61e1fe
-# ╠═95b9ed14-1a62-4f55-b3f2-df9256c4cefe
 # ╠═3cf7ca46-fe1a-4c0e-81f4-eb836acb5329
 # ╠═bc83c7f1-e50c-4d2e-b4d1-9edaa56da33b
 # ╠═542f517b-81ae-44e3-9cd5-32377153700f
@@ -307,8 +270,3 @@ cos.(b) .* (2 .* b)
 # ╠═ce946b50-aa9b-418d-9fdd-fa8d3d1ae315
 # ╠═6760558a-888a-4576-979a-fd6ca2b6126c
 # ╠═580b6b33-2364-4764-a226-6554a3c2e184
-# ╠═d4485912-e3d3-4078-8b6f-c4e0a33ca3e7
-# ╠═d8c28969-27e8-4c95-8a19-3469ae5f0e2f
-# ╠═4f86cfad-26c8-4baf-a47f-3539d8e82694
-# ╠═e7fa025e-3985-4202-bb67-88c3b7c79d47
-# ╠═cf336478-3b1a-4546-8b96-b6784b16ab69
