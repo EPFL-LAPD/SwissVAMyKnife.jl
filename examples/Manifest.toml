@@ -336,7 +336,7 @@ version = "1.9.1"
 deps = ["Atomix", "ChainRulesCore", "KernelAbstractions"]
 path = "../../DiffImageRotation.jl"
 uuid = "cb1f95eb-7c3a-45bc-9e18-5c07f1beaacd"
-version = "0.2.1"
+version = "0.2.2"
 
 [[deps.DiffResults]]
 deps = ["StaticArraysCore"]
@@ -1365,10 +1365,10 @@ deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[deps.RadonKA]]
-deps = ["Atomix", "FFTW", "IndexFunArrays", "KernelAbstractions", "PrecompileTools"]
+deps = ["Atomix", "ChainRulesCore", "FFTW", "IndexFunArrays", "KernelAbstractions", "PrecompileTools"]
 path = "../../RadonKA.jl"
 uuid = "86de8297-835b-47df-b249-c04e8db91db5"
-version = "0.1.1"
+version = "0.2.0"
 
 [[deps.Random]]
 deps = ["SHA", "Serialization"]
@@ -1604,7 +1604,7 @@ uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "5.10.1+6"
 
 [[deps.SwissVAMyKnife]]
-deps = ["DiffImageRotation", "RadonKA", "WaveOpticsPropagation"]
+deps = ["CUDA", "ChainRulesCore", "DiffImageRotation", "IndexFunArrays", "Optim", "Plots", "RadonKA", "WaveOpticsPropagation", "Zygote"]
 path = ".."
 uuid = "fafdf525-54c7-48ec-ae29-528bd4cccfab"
 version = "0.1.0"
