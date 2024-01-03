@@ -19,18 +19,28 @@ Optimize some `patterns` such that they print the object `target`.
 """
 function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:radon, 
                            μ=nothing, optimizer=LBFGS(), iterations=30,
-                           sum_f=abs2)
+                           sum_f=abs2,
+                           z = nothing, λ=405f-9, L=nothing
+                )
     if method == :radon
         fwd = let angles=angles, μ=μ
             fwd(x) = iradon(abs2.(x), angles, μ)
         end
 
         fg! = make_fg!(fwd, target, thresholds; sum_f)
-        
-        rec0 = similar(target, (size(target,1) - 1, size(angles, 1), size(target, 3)))
+       
+        # initial guess is the zero clipped filtered backprojection
+        rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
+
+        #rec0 = radon(target, angles, μ)
+        target2 = iradon(rec0, angles, μ)
+        rec0 ./= maximum(target2)
+        rec0 .= sqrt.(rec0)
+
+        #return rec0, iradon(abs2.(rec0), angles, μ), rec0 
+        #rec0 = similar(target, (size(target,1) - 1, size(angles, 1), size(target, 3)))
         # dumb initial guess
-        fill!(rec0, 0.1)
-        
+        #fill!(rec0, 1)
         res = Optim.optimize(Optim.only_fg!(fg!), rec0, optimizer, 
                              Optim.Options(iterations=iterations, store_trace=true))
 
@@ -40,8 +50,49 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
         printed_intensity = fwd(res.minimizer) 
         printed_intensity ./= maximum(printed_intensity)
         return patterns, printed_intensity, res
+    elseif method == :radon_iterative
+        return iterative_optimization(target, angles, μ; thresholds, iterations)
+    elseif method == :wave
+        patterns_guess = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
+        
+        patterns_0 = similar(target, (size(target, 1), size(target, 2), size(angles, 1)))
+        patterns_0[:, 2:end, :] .= permutedims(patterns_guess, (3, 1, 2))
+        @show size(patterns_0), size(patterns_guess)
+
+        AS, _ = Angular_Spectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)         
+        AS_abs2 = let target=target, AS=AS
+	            function AS_abs2(x)
+		            abs2.(AS(abs2.(x) .+ 0im)[1])
+	            end
+        end
+
+        fwd2 = let AS_abs2=AS_abs2, angles=angles
+            function fwd2(x)
+                fwd_wave(x, AS_abs2, angles)
+            end
+        end
+       
+        fg! = make_fg!(fwd2, target, thresholds; sum_f)
+        
+        # just get the max scaling value
+        rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
+        target2 = iradon(rec0, angles, μ)
+        max_value = maximum(target2)
+        
+        # normalize patterns
+        patterns_0 ./= max_value 
+        patterns_0 .= sqrt.(patterns_0)
+        
+        res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, optimizer, 
+                             Optim.Options(iterations=iterations, store_trace=true))
+
+        return abs2.(res), fwd(res), res
+    else
+        throw(ArgumentError("No method such as $method"))
     end
 end
+
+
 
 
 

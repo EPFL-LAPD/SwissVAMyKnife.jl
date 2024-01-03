@@ -1,4 +1,12 @@
-function fwd(x, AS_abs2, angles)
+"""
+    fwd_wave(x, AS_abs2, angles)
+
+`x` is the collection of patterns. `AS_abs2` propagates one pattern (one angle) into space.
+Also it takes its `abs2` for intensity.
+
+Then we rotate with the correct angle and propagate 
+"""
+function fwd_wave(x, AS_abs2, angles)
 	intensity = copy(similar(x, real(eltype(x)), (size(x, 1), size(x, 2), size(x, 2))))
 	fill!(intensity, 0)
 
@@ -9,12 +17,12 @@ function fwd(x, AS_abs2, angles)
 		CUDA.@sync intensity .+= PermutedDimsArray(imrotate!(tmp_rot, PermutedDimsArray(tmp, (2, 3, 1)), angle), (3, 1, 2))
 		tmp_rot .= 0
 	end
-	return intensity .* mask
+	return intensity# .* mask
 end
 
 
-function ChainRulesCore.rrule(::typeof(fwd), x, AS_abs2, angles)
-	res = fwd(x, AS_abs2, angles)
+function ChainRulesCore.rrule(::typeof(fwd_wave), x, AS_abs2, angles)
+	res = fwd_wave(x, AS_abs2, angles)
 	pb_rotate = let AS_abs2=AS_abs2, angles=angles
 	function pb_rotate(ȳ)
 		grad = similar(x, real(eltype(x)), size(x, 1), size(x, 2), size(angles, 1))

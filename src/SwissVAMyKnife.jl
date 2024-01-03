@@ -9,8 +9,10 @@ using Optim
 using Zygote
 using CUDA
 using Plots
+using FFTW
 
 include("ray_optics.jl")
+include("wave_optics.jl")
 include("optimization.jl")
 
 
@@ -29,7 +31,6 @@ function plot_intensity(target, object_printed, thresholds)
 	plot!([thresholds[2], thresholds[2]], [1, 10000_000], label="upper threshold", linewidth=3)
 	#plot!([chosen_threshold, chosen_threshold], [1, 30000000], label="chosen threshold", linewidth=3)
 end
-
 
 
 
