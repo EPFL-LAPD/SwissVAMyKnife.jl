@@ -56,8 +56,9 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
         patterns_guess = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
         
         patterns_0 = similar(target, (size(target, 1), size(target, 2), size(angles, 1)))
+        fill!(patterns_0, 0)
         patterns_0[:, 2:end, :] .= permutedims(patterns_guess, (3, 1, 2))
-        @show size(patterns_0), size(patterns_guess)
+        patterns_0 ./= maximum(patterns_0) .* 0.0001f0 
 
         AS, _ = Angular_Spectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)         
         AS_abs2 = let target=target, AS=AS
@@ -72,21 +73,26 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
             end
         end
        
-        fg! = make_fg!(fwd2, target, thresholds; sum_f)
+        target_permuted = permutedims(target, (3, 2, 1))
+        fg! = make_fg!(fwd2, target_permuted, thresholds; sum_f)
         
         # just get the max scaling value
-        rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
-        target2 = iradon(rec0, angles, μ)
-        max_value = maximum(target2)
-        
-        # normalize patterns
-        patterns_0 ./= max_value 
-        patterns_0 .= sqrt.(patterns_0)
+        #rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
+        patterns_0 .= 0
+        patterns_0[begin+8:end-8, begin+8:end-8, :] .= 0.1#0.000001
+        #patterns_0 .= 0.001
         
         res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, optimizer, 
                              Optim.Options(iterations=iterations, store_trace=true))
 
-        return abs2.(res), fwd(res), res
+        #return abs2.(patterns_0), fwd2(patterns_0), 0#res
+        printed = fwd2(res.minimizer)
+        printed ./= maximum(printed)
+        patterns = abs2.(res.minimizer)
+
+        printed_perm = permutedims(printed, (3, 2, 1));
+        patterns_perm = permutedims(patterns, (1, 3, 2));
+        return patterns_perm, printed_perm, res
     else
         throw(ArgumentError("No method such as $method"))
     end
