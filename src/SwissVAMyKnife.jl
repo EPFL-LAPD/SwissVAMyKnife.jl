@@ -46,8 +46,8 @@ Save all arguments into the path `fpath`.
 """
 function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
     @assert size(angles, 1) == size(patterns, 2) "Size mismatch between angles and patterns"
-    @assert size(patterns, 1) == size(target, 1) "Size mismatch between target and patterns"
-    @assert size(patterns, 3) == size(target, 3) "Size mismatch between target and patterns"
+    #@assert size(patterns, 1) == size(target, 1) "Size mismatch between target and patterns"
+    #@assert size(patterns, 3) == size(target, 3) "Size mismatch between target and patterns"
 
     # might be on GPU, move to CPU
     patterns = Array(patterns)

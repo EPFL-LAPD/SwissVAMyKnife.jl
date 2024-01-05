@@ -159,17 +159,29 @@ L = 400f-6
 # ╔═╡ ad64cd2d-158f-41c1-af8d-b1b713a8b502
 z = togoc(range(0, L, size(target, 1)));
 
+# ╔═╡ 41f01110-9962-44d1-ae97-2fa711a0c521
+SwissVAMyKnife.leaky_relu.(CUDA.rand(2,2))
+
 # ╔═╡ 08d04781-b4c7-41da-8e2f-107d5719239a
-@time patterns_wave, printed_i_wave, res_wave = optimize_patterns(target, angles; iterations=250, method=:wave, optimizer=LBFGS(), thresholds=thresholds, μ=nothing, L, λ, z)
+@time patterns_wave, printed_i_wave, res_wave = optimize_patterns(target, angles; iterations=10, method=:wave, loss=:leaky_relu, optimizer=LBFGS(), thresholds=thresholds, μ=nothing, L, λ, z)
+
+# ╔═╡ 29ac74c2-ab2a-45ec-835b-1c6f6c2886f9
+Revise.retry()
 
 # ╔═╡ 53c2c266-e0ae-4fd8-9f90-e1cf700cdba8
 res_wave
+
+# ╔═╡ 902720fb-962d-4d4f-9eca-e0812d031871
+SwissVAMyKnife.leaky_relu(-10.0)
 
 # ╔═╡ 575ba3c2-1f80-4193-98ad-fdf0e73341d8
 md"angle=$(@bind i_angle2 Slider(1:1:size(patterns, 2), show_value=true))"
 
 # ╔═╡ 8ce5a252-9fac-47b3-a84e-351ba723c243
-simshow(Array(patterns_wave[:, i_angle2, :] .- 0.01), γ=1, cmap=:turbo)
+simshow(Array(patterns_wave[:, i_angle2, :]), γ=1, cmap=:turbo)
+
+# ╔═╡ 34d86aad-4a33-4e54-9c29-e0b61e044574
+extrema(patterns_wave)
 
 # ╔═╡ 60c856a5-ff82-4de0-86b0-8c3ce8d03049
 p2 = plot_intensity(Array(target), Array(printed_i_wave), (0.65, 0.75))
@@ -280,11 +292,26 @@ extrema(printed_i_wave)
 # ╔═╡ b3bc4f92-2b45-42f4-942f-685726fcd201
 radon_wave_printed =  simshow(intensity_radon[:, :, z_i4] .> threshold5)
 
+# ╔═╡ e3ea1e0d-4834-46d6-8417-7d10851df5f3
+begin
+	pattern_wave_example = simshow(Array(patterns_wave[:, 51, :]), cmap=:turbo)
+	save("/home/felix/Documents/data/candidacy/pattern_wave_example.png", pattern_wave_example)
+end
+
+# ╔═╡ 7a41d265-ab8f-496f-b36a-d0072131e91b
+begin
+	pattern_radon_example = simshow(Array(patterns[:, 51, :]'), cmap=:turbo)
+	save("/home/felix/Documents/data/candidacy/pattern_radon_example.png", pattern_radon_example)
+end
+
 # ╔═╡ 9b119ca1-06ef-4781-9049-04a34f328068
 extrema(patterns_wave)
 
 # ╔═╡ d187a388-06b2-4f48-983b-925f20350923
-save_patterns("/tmp/hallo/lol/lel", patterns_wave, printed_i_wave, angles, target, overwrite=true)
+save_patterns("/tmp/boat_wave", patterns_wave, printed_i_wave, angles, target, overwrite=true)
+
+# ╔═╡ ff8970ab-0e04-4805-bb31-25e782a0f2ba
+save_patterns("/tmp/boat_radon", permutedims(patterns, (3, 2,1)), printed_i, angles, target, overwrite=true)
 
 # ╔═╡ 5a16bdce-418a-4ea7-bfde-e2461603f0df
 Revise.retry()
@@ -391,10 +418,14 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═5d110682-623d-46cc-9657-17ecc47c79bf
 # ╠═0d0b3478-fc0d-4f1b-b956-ff220bd6539a
 # ╠═ad64cd2d-158f-41c1-af8d-b1b713a8b502
+# ╠═41f01110-9962-44d1-ae97-2fa711a0c521
 # ╠═08d04781-b4c7-41da-8e2f-107d5719239a
+# ╠═29ac74c2-ab2a-45ec-835b-1c6f6c2886f9
 # ╠═53c2c266-e0ae-4fd8-9f90-e1cf700cdba8
+# ╠═902720fb-962d-4d4f-9eca-e0812d031871
 # ╟─575ba3c2-1f80-4193-98ad-fdf0e73341d8
 # ╠═8ce5a252-9fac-47b3-a84e-351ba723c243
+# ╠═34d86aad-4a33-4e54-9c29-e0b61e044574
 # ╠═60c856a5-ff82-4de0-86b0-8c3ce8d03049
 # ╠═f6f98113-d480-4a0e-9acd-60043c70b4cb
 # ╟─105db6be-382f-4521-837c-bc7d39a3dce9
@@ -423,8 +454,11 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═c43d8d6f-a4da-4704-b142-6eda10aa8833
 # ╠═390391d4-4ae6-4f46-8d51-ed29b93c5209
 # ╠═b3bc4f92-2b45-42f4-942f-685726fcd201
+# ╠═e3ea1e0d-4834-46d6-8417-7d10851df5f3
+# ╠═7a41d265-ab8f-496f-b36a-d0072131e91b
 # ╠═9b119ca1-06ef-4781-9049-04a34f328068
 # ╠═d187a388-06b2-4f48-983b-925f20350923
+# ╠═ff8970ab-0e04-4805-bb31-25e782a0f2ba
 # ╠═5a16bdce-418a-4ea7-bfde-e2461603f0df
 # ╠═1e07c210-3e27-44e5-8b8f-07811d8ef917
 # ╠═6dd224fc-ba01-49a4-97ab-67d2712f810b

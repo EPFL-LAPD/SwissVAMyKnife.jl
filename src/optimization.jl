@@ -1,5 +1,8 @@
 export optimize_patterns
 
+
+leaky_relu(x) = max(oftype(x, 0.01) * x, x)
+
 """
     optimize_patterns(target, angles, thresholds=(0.7f0, 0.8f0),
                       method=:radon, μ=nothing,
@@ -19,7 +22,7 @@ Optimize some `patterns` such that they print the object `target`.
 """
 function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:radon, 
                            μ=nothing, optimizer=LBFGS(), iterations=30,
-                           sum_f=abs2,
+                           sum_f=abs2, loss=:object_space,
                            z = nothing, λ=405f-9, L=nothing
                 )
     if method == :radon
@@ -27,7 +30,7 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
             fwd(x) = iradon(abs2.(x), angles, μ)
         end
 
-        fg! = make_fg!(fwd, target, thresholds; sum_f)
+        fg! = make_fg!(fwd, target, thresholds; sum_f, loss)
        
         # initial guess is the zero clipped filtered backprojection
         rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
@@ -74,7 +77,7 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
         end
        
         target_permuted = permutedims(target, (3, 2, 1))
-        fg! = make_fg!(fwd2, target_permuted, thresholds; sum_f)
+        fg! = make_fg!(fwd2, target_permuted, thresholds; sum_f, loss)
         
         # just get the max scaling value
         #rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
@@ -103,28 +106,43 @@ end
 
 
 """
-    make_fg!(fwd, target, thresholds=(0.7, 0.8), sum_f=abs2)
+    make_fg!(fwd, target, thresholds=(0.7, 0.8), sum_f=abs2, loss)
 
 `fwd` is the forward model to distribute intensity into space
 `target` is an array with either 1s or 0s to mark the object
 `thresholds` the thresholds we are optimizing for
 `sum_f` is the summation function at the end. abs2 or abs work well
 """
-function make_fg!(fwd, target, thresholds; sum_f=abs2)
+function make_fg!(fwd, target, thresholds; sum_f=abs2, loss)
     mask = similar(target, Bool, (size(target, 1), size(target, 2)))
 	mask[:, :] .= rr2(eltype(target), (size(target)[1:2]..., )) .<= (size(target, 1) ÷ 2  - 1)^2
 
 	notobject = iszero.(target)
 	isobject = isone.(target)
 
-    loss = let fwd=fwd, mask=mask, notobject=notobject, isobject=isobject, thresholds=thresholds
+    loss_f = let sum_f=sum_f 
+        if loss == :object_space
+            @inline function loss_f3(f::AbstractArray{T}, thresholds, isobject, notobject) where T
+                return (sum(sum_f, max.(0, T(thresholds[2]) .- view(f, isobject))) + 
+                        sum(sum_f, max.(0, view(f, notobject) .- T(thresholds[1]))))
+            end
+        elseif loss == :leaky_relu
+            @inline function loss_f2(f::AbstractArray{T}, thresholds, isobject, notobject) where T
+                return (sum(leaky_relu.(T(thresholds[2]) .- view(f, isobject))) + 
+                        sum(leaky_relu.(view(f, notobject) .- T(thresholds[1]))))
+            end
+        else
+            throw(ArgumentError("$loss not possible"))
+        end
+    end 
+
+    loss = let fwd=fwd, mask=mask, notobject=notobject, isobject=isobject, thresholds=thresholds, loss_f=loss_f
         function L_VAM(x::AbstractArray{T}) where T
 			f = fwd(x)
 
             # possible speed-up to avoid max here
 			f = f ./ maximum(f)
-			return sum(sum_f, max.(0, T(thresholds[2]) .- view(f, isobject))) + 
-                   sum(sum_f, max.(0, view(f, notobject) .- T(thresholds[1])))
+            return loss_f(f, thresholds, isobject, notobject)
 		end
     end
 
