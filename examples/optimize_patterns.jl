@@ -81,9 +81,6 @@ function load_benchy(sz, sz_file, path)
 	return togoc(target2)
 end
 
-# ╔═╡ edd4580e-4cf2-4623-a127-007547b88a03
-target2 = load_benchy((252, 252, 252), (200, 200, 200), "/home/felix/Downloads/benchy/files/output/");
-
 # ╔═╡ f90cf4dd-6844-4515-a877-19b0d6a07f3f
 simshow(Array(target[:, :, 25]))
 
@@ -103,7 +100,7 @@ md"# Specify angles and thresholds for Optimization"
 200 / 2 * 2π
 
 # ╔═╡ fd7a91df-5edd-479d-a810-3f30e38a2a21
-angles = range(0f0, 2f0 * π, 50)
+angles = range(0f0, 2f0 * π, 200)
 
 # ╔═╡ b865677b-e54e-4468-80a2-8426f8eb0be3
 md"Thresholds such as the default ones are often okayish.
@@ -139,13 +136,16 @@ md"depth in z=$(@bind z_i Slider(1:1:size(target, 3), show_value=true))"
 md"angle=$(@bind i_angle Slider(1:1:size(patterns, 2), show_value=true))"
 
 # ╔═╡ 9a81a25c-bf91-4b1e-9713-ae65c7db2d16
-simshow(Array(patterns[:, i_angle, :])')
+simshow(Array(patterns[:, i_angle, :])', cmap=:turbo)
 
 # ╔═╡ b953013d-aae8-4b90-89ed-d76eb190bba4
-plot_intensity(Array(target), Array(printed_i), (0.65, 0.75))
+p1 = plot_intensity(Array(target[begin:1:end]), Array(printed_i[begin:1:end]), (0.65, 0.75))
 
-# ╔═╡ 960c8db1-3f96-48c1-a1cc-f6f75aa98c15
-size(patterns)
+# ╔═╡ 0e3585a4-8079-4272-b0d1-bd4949dd872a
+savefig(p1, "/tmp/histogram_radon_boat.pdf")
+
+# ╔═╡ 0e167ace-96ce-443a-adcc-ae06229a2d5f
+size(target)
 
 # ╔═╡ 238931ba-9ce9-496a-b424-a9f1682b6d99
 md"# Wave Optics"
@@ -160,10 +160,7 @@ L = 400f-6
 z = togoc(range(0, L, size(target, 1)));
 
 # ╔═╡ 08d04781-b4c7-41da-8e2f-107d5719239a
-@time patterns_wave, printed_i_wave, res_wave = optimize_patterns(target, angles; iterations=50, method=:wave, optimizer=LBFGS(), thresholds=thresholds, μ=nothing, L, λ, z)
-
-# ╔═╡ 1de06b32-872c-4bcb-8e6a-0bda786ede3e
-size(patterns_wave)
+@time patterns_wave, printed_i_wave, res_wave = optimize_patterns(target, angles; iterations=250, method=:wave, optimizer=LBFGS(), thresholds=thresholds, μ=nothing, L, λ, z)
 
 # ╔═╡ 53c2c266-e0ae-4fd8-9f90-e1cf700cdba8
 res_wave
@@ -172,13 +169,16 @@ res_wave
 md"angle=$(@bind i_angle2 Slider(1:1:size(patterns, 2), show_value=true))"
 
 # ╔═╡ 8ce5a252-9fac-47b3-a84e-351ba723c243
-simshow(Array(patterns_wave[:, i_angle2, :]), γ=1)
+simshow(Array(patterns_wave[:, i_angle2, :] .- 0.01), γ=1, cmap=:turbo)
+
+# ╔═╡ 60c856a5-ff82-4de0-86b0-8c3ce8d03049
+p2 = plot_intensity(Array(target), Array(printed_i_wave), (0.65, 0.75))
+
+# ╔═╡ f6f98113-d480-4a0e-9acd-60043c70b4cb
+savefig(p2, "/tmp/histogram_wave_boat.pdf")
 
 # ╔═╡ 105db6be-382f-4521-837c-bc7d39a3dce9
 md"Threshold=$(@bind threshold3 Slider(0.0:0.01:1, show_value=true))"
-
-# ╔═╡ 60c856a5-ff82-4de0-86b0-8c3ce8d03049
-
 
 # ╔═╡ afddd44a-3b23-48d1-aeb6-a7b9a05e303b
 md"depth in z=$(@bind z_i3 Slider(1:1:size(target, 3), show_value=true))"
@@ -262,17 +262,56 @@ begin
 	intensity_wave ./= maximum(intensity_wave)
 end;
 
-# ╔═╡ e5181ea2-12be-40eb-acae-5d4b9cc9b3c6
-
-
-# ╔═╡ 62753472-6c6a-4cc4-9473-f5e32b1a9735
-md"Threshold=$(@bind threshold4 Slider(0.0:0.01:1, show_value=true))"
+# ╔═╡ e0fd1a8a-aa2b-4c5a-afe0-6c346b340589
+md"Threshold=$(@bind threshold5 Slider(0.0:0.01:1, show_value=true))"
 
 # ╔═╡ 70115b27-c18d-4e5e-8be7-87af641e751b
 md"depth in z=$(@bind z_i4 Slider(1:1:size(target, 3), show_value=true))"
 
+# ╔═╡ 9e6cbeef-08b7-4b63-98a1-729875ef05e4
+size(patterns_wave)
+
+# ╔═╡ c43d8d6f-a4da-4704-b142-6eda10aa8833
+Revise.retry()
+
+# ╔═╡ 390391d4-4ae6-4f46-8d51-ed29b93c5209
+extrema(printed_i_wave)
+
+# ╔═╡ b3bc4f92-2b45-42f4-942f-685726fcd201
+radon_wave_printed =  simshow(intensity_radon[:, :, z_i4] .> threshold5)
+
+# ╔═╡ 9b119ca1-06ef-4781-9049-04a34f328068
+extrema(patterns_wave)
+
+# ╔═╡ d187a388-06b2-4f48-983b-925f20350923
+save_patterns("/tmp/hallo/lol/lel", patterns_wave, printed_i_wave, angles, target, overwrite=true)
+
+# ╔═╡ 5a16bdce-418a-4ea7-bfde-e2461603f0df
+Revise.retry()
+
+# ╔═╡ 1e07c210-3e27-44e5-8b8f-07811d8ef917
+target_printed =  simshow(Array(target)[:, :, z_i4])
+
+# ╔═╡ 6dd224fc-ba01-49a4-97ab-67d2712f810b
+save("/tmp/target.png", target_printed)
+
+# ╔═╡ 524a7c04-3b61-4132-bfdf-a16c1d64453e
+save("/tmp/wave_radon_simulation.png", radon_wave_printed)
+
+# ╔═╡ e5181ea2-12be-40eb-acae-5d4b9cc9b3c6
+plot_intensity(Array(target), Array(intensity_radon), (0.65, 0.75))
+
+# ╔═╡ 62753472-6c6a-4cc4-9473-f5e32b1a9735
+md"Threshold=$(@bind threshold4 Slider(0.0:0.01:1, show_value=true))"
+
 # ╔═╡ 4eb9b1c1-3969-483c-bc8e-d57530f6ce8e
-[simshow(intensity_radon[:, :, z_i4] .> threshold4) simshow(intensity_radon[:, :, z_i4], set_one=false) simshow(intensity_wave[:, :, z_i4] .> threshold4) simshow(simshow(intensity_wave[:, :, z_i4], set_one=false)) simshow(Array(target)[:, :, z_i4])]
+[simshow(intensity_radon[:, :, z_i4] .> threshold5) simshow(intensity_radon[:, :, z_i4], set_one=false) simshow(intensity_wave[:, :, z_i4] .> threshold4) simshow(simshow(intensity_wave[:, :, z_i4], set_one=false)) simshow(Array(target)[:, :, z_i4])]
+
+# ╔═╡ c272d6e0-80f5-4cb4-9d7f-f6ccc3857412
+wave_printed =  simshow(intensity_wave[:, :, z_i4] .> threshold4)
+
+# ╔═╡ 5c452db0-f96d-470b-84ec-2ba0751838c3
+save("/tmp/wave_simulation.png", wave_printed)
 
 # ╔═╡ 82039c35-f97c-476c-9efd-6a468bffe7f8
 
@@ -289,7 +328,12 @@ size(patterns_wave)
 # ╔═╡ 571a12c5-cea8-44d6-b5d0-25404f55d3c9
 sum(abs2, patterns_wave)
 
+# ╔═╡ edd4580e-4cf2-4623-a127-007547b88a03
+target = load_benchy((252, 252, 252), (200, 200, 200), "/home/felix/Downloads/benchy/files/output/");
+
 # ╔═╡ db29a6a5-2635-4fbe-8111-8c369fafa6e1
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	target = togoc(zeros(Float32, (100, 100, 100)))
 	
@@ -297,6 +341,7 @@ begin
 		target[begin+10+i÷2:end-10-i÷2,begin+10+i÷3:end-10-i÷3, 10 + i] .= 1
 	end
 end
+  ╠═╡ =#
 
 # ╔═╡ 66e90a47-981e-4d19-81aa-90e262f64158
 # ╠═╡ disabled = true
@@ -340,8 +385,8 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═b5cdb60e-6294-4caf-b8b3-9bef8db0d137
 # ╠═9a81a25c-bf91-4b1e-9713-ae65c7db2d16
 # ╠═b953013d-aae8-4b90-89ed-d76eb190bba4
-# ╠═960c8db1-3f96-48c1-a1cc-f6f75aa98c15
-# ╠═1de06b32-872c-4bcb-8e6a-0bda786ede3e
+# ╠═0e3585a4-8079-4272-b0d1-bd4949dd872a
+# ╠═0e167ace-96ce-443a-adcc-ae06229a2d5f
 # ╟─238931ba-9ce9-496a-b424-a9f1682b6d99
 # ╠═5d110682-623d-46cc-9657-17ecc47c79bf
 # ╠═0d0b3478-fc0d-4f1b-b956-ff220bd6539a
@@ -350,10 +395,11 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═53c2c266-e0ae-4fd8-9f90-e1cf700cdba8
 # ╟─575ba3c2-1f80-4193-98ad-fdf0e73341d8
 # ╠═8ce5a252-9fac-47b3-a84e-351ba723c243
-# ╠═105db6be-382f-4521-837c-bc7d39a3dce9
 # ╠═60c856a5-ff82-4de0-86b0-8c3ce8d03049
-# ╠═afddd44a-3b23-48d1-aeb6-a7b9a05e303b
-# ╟─71247ebd-9be4-4328-a1e6-a2fa82d3ae2a
+# ╠═f6f98113-d480-4a0e-9acd-60043c70b4cb
+# ╟─105db6be-382f-4521-837c-bc7d39a3dce9
+# ╟─afddd44a-3b23-48d1-aeb6-a7b9a05e303b
+# ╠═71247ebd-9be4-4328-a1e6-a2fa82d3ae2a
 # ╟─463b7a89-4df0-4442-8d6e-2b6b251fbc1b
 # ╠═19c2d9dd-ec68-420e-9d06-2c66ddbe0125
 # ╠═c443703d-cd2a-4e2a-bfd0-742b4fcb001f
@@ -369,9 +415,22 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═8e68bbcb-f648-47fe-81ef-305d4d6e8ec2
 # ╠═e0792c95-72ba-4af2-add3-fe50cea3cc80
 # ╠═4eb9b1c1-3969-483c-bc8e-d57530f6ce8e
+# ╠═e0fd1a8a-aa2b-4c5a-afe0-6c346b340589
+# ╠═70115b27-c18d-4e5e-8be7-87af641e751b
+# ╠═c272d6e0-80f5-4cb4-9d7f-f6ccc3857412
+# ╠═9e6cbeef-08b7-4b63-98a1-729875ef05e4
+# ╠═5c452db0-f96d-470b-84ec-2ba0751838c3
+# ╠═c43d8d6f-a4da-4704-b142-6eda10aa8833
+# ╠═390391d4-4ae6-4f46-8d51-ed29b93c5209
+# ╠═b3bc4f92-2b45-42f4-942f-685726fcd201
+# ╠═9b119ca1-06ef-4781-9049-04a34f328068
+# ╠═d187a388-06b2-4f48-983b-925f20350923
+# ╠═5a16bdce-418a-4ea7-bfde-e2461603f0df
+# ╠═1e07c210-3e27-44e5-8b8f-07811d8ef917
+# ╠═6dd224fc-ba01-49a4-97ab-67d2712f810b
+# ╠═524a7c04-3b61-4132-bfdf-a16c1d64453e
 # ╠═e5181ea2-12be-40eb-acae-5d4b9cc9b3c6
 # ╠═62753472-6c6a-4cc4-9473-f5e32b1a9735
-# ╠═70115b27-c18d-4e5e-8be7-87af641e751b
 # ╠═82039c35-f97c-476c-9efd-6a468bffe7f8
 # ╠═ddd1f894-dde5-46ab-8559-ec5aee176bb6
 # ╠═6eb8d6c6-029a-46cd-9ab3-bfd9a3133c69
