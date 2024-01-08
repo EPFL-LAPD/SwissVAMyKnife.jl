@@ -1,5 +1,5 @@
 export optimize_patterns
-
+export printing_errors
 
 leaky_relu(x) = max(oftype(x, 0.01) * x, x)
 
@@ -169,3 +169,28 @@ function make_fg!(fwd, target, thresholds; sum_f=abs2, loss)
     return fg!
 end
 
+
+
+"""
+    printing_errors(printed, target, thresholds)
+
+"""
+function printing_errors(printed, target, thresholds)
+    isobject = target .≈ 1
+    notobject = target .≈ 0
+	mid_thresh = (thresholds[2] + thresholds[1]) / 2
+	W_not = sum(printed[notobject] .> thresholds[1])
+	W_not_is = sum(printed[notobject] .> mid_thresh)
+	W_is = sum(printed[isobject] .< thresholds[2])
+	
+	N_not = sum(notobject)
+	N_is = sum(isobject)
+	
+	voxels_object_wrong_printed = sum(abs.((printed .> mid_thresh)[isobject] .- target[isobject]))
+	voxels_void_wrong_printed = sum(abs.((printed .> mid_thresh)[notobject] .- target[notobject]))
+
+	#voxels_object_wrong_printed / N_is, W_not_is / N_not, W_not / N_not, W_is / N_is
+
+	@info "Object pixels not printed $(round(voxels_object_wrong_printed / N_is * 100, digits=4))%"
+	@info "Void pixels falsely printed $(round(voxels_void_wrong_printed / N_not * 100, digits=4))%"
+end
