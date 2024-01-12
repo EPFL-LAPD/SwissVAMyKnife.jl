@@ -20,7 +20,7 @@ Optimize some `patterns` such that they print the object `target`.
 
 
 """
-function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:radon, 
+function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:radon_iterative, 
                            μ=nothing, optimizer=LBFGS(), iterations=30,
                            sum_f=abs2, loss=:object_space,
                            z = nothing, λ=405f-9, L=nothing
@@ -63,10 +63,10 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
         patterns_0[:, 2:end, :] .= permutedims(patterns_guess, (3, 1, 2))
         patterns_0 ./= maximum(patterns_0) .* 0.0001f0 
 
-        AS, _ = Angular_Spectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)         
-        AS_abs2 = let target=target, AS=AS
+        AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)         
+        AS_abs2 = let target=target, AS=AS, langles=length(angles)
 	            function AS_abs2(x)
-		            abs2.(AS(abs2.(x) .+ 0im)[1])
+		            abs2.(AS(abs2.(x) ./ langles .+ 0im)[1])
 	            end
         end
 
@@ -82,7 +82,7 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
         # just get the max scaling value
         #rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
         patterns_0 .= 0
-        patterns_0[begin+8:end-8, begin+8:end-8, :] .= 0.1#0.000001
+        patterns_0[begin+8:end-8, begin+8:end-8, :] .= 1f-5#0.0001#0.000001
         #patterns_0 .= 0.001
         
         res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, optimizer, 
@@ -141,7 +141,10 @@ function make_fg!(fwd, target, thresholds; sum_f=abs2, loss)
 			f = fwd(x)
 
             # possible speed-up to avoid max here
-			f = f ./ maximum(f)
+            m = maximum(f)
+            if !iszero(m)
+			    f = f ./ m 
+            end
             return loss_f(f, thresholds, isobject, notobject)
 		end
     end

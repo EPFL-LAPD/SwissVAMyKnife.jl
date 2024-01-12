@@ -25,6 +25,7 @@ export save_patterns
 
 
 function plot_intensity(target, object_printed, thresholds)
+    # :stephist vs :barhist
     plot_font = "Computer Modern"
     default(fontfamily=plot_font,
 	    linewidth=2, framestyle=:box, label=nothing, grid=false)
