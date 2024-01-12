@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -81,14 +81,35 @@ function load_benchy(sz, sz_file, path)
 	return togoc(target2)
 end
 
+# ╔═╡ edd4580e-4cf2-4623-a127-007547b88a03
+target = load_benchy((252, 252, 252), (200, 200, 200), "/home/felix/Downloads/benchy/files/output/");
+
 # ╔═╡ f90cf4dd-6844-4515-a877-19b0d6a07f3f
 simshow(Array(target[:, :, 25]))
+
+# ╔═╡ 66e90a47-981e-4d19-81aa-90e262f64158
+# ╠═╡ disabled = true
+#=╠═╡
+target = select_region(target2, new_size=(100, 100, 100))
+  ╠═╡ =#
 
 # ╔═╡ 29461391-9128-4411-b33e-97f3ce6625a7
 @bind izzz Slider(1:size(target, 3), show_value=true)
 
 # ╔═╡ 5b45efde-da5a-45af-968b-208d04e43517
 simshow(Array(target[:, :, izzz]))
+
+# ╔═╡ db29a6a5-2635-4fbe-8111-8c369fafa6e1
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	target = togoc(zeros(Float32, (100, 100, 100)))
+	
+	for i in 1:80
+		target[begin+10+i÷2:end-10-i÷2,begin+10+i÷3:end-10-i÷3, 10 + i] .= 1
+	end
+end
+  ╠═╡ =#
 
 # ╔═╡ 8f12a113-6772-4567-95bc-d43f72d303ca
 
@@ -142,7 +163,7 @@ simshow(Array(patterns[:, i_angle, :])', cmap=:turbo)
 p1 = plot_intensity(Array(target[begin:1:end]), Array(printed_i[begin:1:end]), (0.65, 0.75))
 
 # ╔═╡ 0e3585a4-8079-4272-b0d1-bd4949dd872a
-savefig(p1, "/tmp/histogram_radon_boat.pdf")
+savefig(p1, "/home/felix/Documents/data/candidacy/histogram_radon_boat.pdf")
 
 # ╔═╡ 0e167ace-96ce-443a-adcc-ae06229a2d5f
 size(target)
@@ -163,13 +184,16 @@ z = togoc(range(0, L, size(target, 1)));
 SwissVAMyKnife.leaky_relu.(CUDA.rand(2,2))
 
 # ╔═╡ 08d04781-b4c7-41da-8e2f-107d5719239a
-@time patterns_wave, printed_i_wave, res_wave = optimize_patterns(target, angles; iterations=10, method=:wave, loss=:leaky_relu, optimizer=LBFGS(), thresholds=thresholds, μ=nothing, L, λ, z)
+@time patterns_wave, printed_i_wave, res_wave = optimize_patterns(target, angles; iterations=150, method=:wave, loss=:object_space, optimizer=LBFGS(), thresholds=thresholds, μ=nothing, L, λ, z)
 
 # ╔═╡ 29ac74c2-ab2a-45ec-835b-1c6f6c2886f9
 Revise.retry()
 
 # ╔═╡ 53c2c266-e0ae-4fd8-9f90-e1cf700cdba8
 res_wave
+
+# ╔═╡ b0a3f7bc-c435-450b-9429-60b3c9cac929
+sum(patterns_wave) / length(patterns_wave)
 
 # ╔═╡ 902720fb-962d-4d4f-9eca-e0812d031871
 SwissVAMyKnife.leaky_relu(-10.0)
@@ -178,7 +202,7 @@ SwissVAMyKnife.leaky_relu(-10.0)
 md"angle=$(@bind i_angle2 Slider(1:1:size(patterns, 2), show_value=true))"
 
 # ╔═╡ 8ce5a252-9fac-47b3-a84e-351ba723c243
-simshow(Array(patterns_wave[:, i_angle2, :]), γ=1, cmap=:turbo)
+simshow(Array((patterns_wave[:, i_angle2, :])), γ=1, cmap=:turbo)
 
 # ╔═╡ 34d86aad-4a33-4e54-9c29-e0b61e044574
 extrema(patterns_wave)
@@ -187,7 +211,7 @@ extrema(patterns_wave)
 p2 = plot_intensity(Array(target), Array(printed_i_wave), (0.65, 0.75))
 
 # ╔═╡ f6f98113-d480-4a0e-9acd-60043c70b4cb
-savefig(p2, "/tmp/histogram_wave_boat.pdf")
+savefig(p2, "/home/felix/Documents/data/candidacy/histogram_wave_boat.pdf")
 
 # ╔═╡ 105db6be-382f-4521-837c-bc7d39a3dce9
 md"Threshold=$(@bind threshold3 Slider(0.0:0.01:1, show_value=true))"
@@ -208,38 +232,32 @@ plot([a.value for a in res.trace], title="Loss over iterations", xlabel="Iterati
 plot([a.value for a in res_wave.trace], title="Loss over iterations", xlabel="Iterations", ylabel="Loss", yscale=:log10)
 
 # ╔═╡ c443703d-cd2a-4e2a-bfd0-742b4fcb001f
-#=╠═╡
 SwissVAMyKnife.plot_intensity(Array(target), Array(printed_i), thresholds)
-  ╠═╡ =#
+
+# ╔═╡ d6624c7d-9266-4a41-843e-ddd54bcda7ec
+printing_errors(printed_i_wave, target, thresholds)
+
+# ╔═╡ 6c106f9c-0690-4170-a383-5143376093e1
+printing_errors(printed_i, target, thresholds)
 
 # ╔═╡ 347a0bc9-e387-4dab-a74c-3ff5d5f1a33a
-#=╠═╡
 [simshow(Array(printed_i[:,:, z_i]), cmap=:turbo) simshow(Array(printed_i[:, :, z_i]) .> threshold) simshow(Array(target[:, :, z_i]))]
-  ╠═╡ =#
 
 # ╔═╡ b86d65cd-b52f-405d-874a-7a8f6fce732e
-#=╠═╡
-simshow(Array(printed_i[:, :, 4]))
-  ╠═╡ =#
+simshow(Array(printed_i[:, 20, :]))
 
 # ╔═╡ 85aa66e4-fc61-4e81-9d1c-8bce66ff51c6
-#=╠═╡
 extrema(printed_i)
-  ╠═╡ =#
 
 # ╔═╡ 2e8caf8a-d2d2-4326-b089-70ef18d74630
-#=╠═╡
 simshow(Array(patterns[:, 4, :]), cmap=:turbo)
-  ╠═╡ =#
 
 # ╔═╡ fc5c2bf9-9aa1-4391-82f0-bf7c538d6985
-#=╠═╡
 sum(patterns) / length(patterns)
-  ╠═╡ =#
 
 # ╔═╡ 4a9d17be-f8f2-4bab-aa66-ee71077acaec
 begin
-	         AS, _ = Angular_Spectrum(permutedims(patterns_wave, (1, 3,2))[:, :, 1] .+ 0im, z, λ, L, padding=false)    
+	         AS, _ = AngularSpectrum(permutedims(patterns_wave, (1, 3,2))[:, :, 1] .+ 0im, z, λ, L, padding=false)    
 	         AS_abs2 = let target=target, AS=AS
 	                 function AS_abs2(x)
 	                     abs2.(AS(abs2.(x) .+ 0im)[1])
@@ -254,7 +272,10 @@ begin
 end
 
 # ╔═╡ fd4e50a4-1a94-498d-9fd5-0274424f97fd
-simshow(permutedims(Array(fwd2(sqrt.(permutedims(patterns_wave, (1,3,2))))), (3,2,1)))[:, :, 30]
+simshow(permutedims(Array(fwd2(sqrt.(permutedims(patterns_wave, (1,3,2))))), (3,2,1)))[:, :, 20]
+
+# ╔═╡ 73e14d8f-a76a-4ba9-a368-aa743da47160
+extrema((permutedims(Array(fwd2(sqrt.(permutedims(0 .* patterns_wave, (1,3,2))))), (3,2,1)))[:, :, 20])
 
 # ╔═╡ 8c389472-7bcc-4a3d-af1d-de4ad969a077
 size(patterns)
@@ -274,14 +295,26 @@ begin
 	intensity_wave ./= maximum(intensity_wave)
 end;
 
+# ╔═╡ 62753472-6c6a-4cc4-9473-f5e32b1a9735
+md"Threshold=$(@bind threshold4 Slider(0.0:0.01:1, show_value=true))"
+
 # ╔═╡ e0fd1a8a-aa2b-4c5a-afe0-6c346b340589
 md"Threshold=$(@bind threshold5 Slider(0.0:0.01:1, show_value=true))"
 
 # ╔═╡ 70115b27-c18d-4e5e-8be7-87af641e751b
 md"depth in z=$(@bind z_i4 Slider(1:1:size(target, 3), show_value=true))"
 
+# ╔═╡ 4eb9b1c1-3969-483c-bc8e-d57530f6ce8e
+[simshow(intensity_radon[:, :, z_i4] .> threshold5) simshow(intensity_radon[:, :, z_i4], set_one=false) simshow(intensity_wave[:, :, z_i4] .> threshold4) simshow(simshow(intensity_wave[:, :, z_i4], set_one=false)) simshow(Array(target)[:, :, z_i4])]
+
+# ╔═╡ c272d6e0-80f5-4cb4-9d7f-f6ccc3857412
+wave_printed =  simshow(intensity_wave[:, :, z_i4] .> threshold4)
+
 # ╔═╡ 9e6cbeef-08b7-4b63-98a1-729875ef05e4
 size(patterns_wave)
+
+# ╔═╡ 5c452db0-f96d-470b-84ec-2ba0751838c3
+save("/home/felix/Documents/data/candidacy/wave_simulation.png", wave_printed)
 
 # ╔═╡ c43d8d6f-a4da-4704-b142-6eda10aa8833
 Revise.retry()
@@ -304,14 +337,17 @@ begin
 	save("/home/felix/Documents/data/candidacy/pattern_radon_example.png", pattern_radon_example)
 end
 
+# ╔═╡ 92dbd9d4-314b-407c-9420-a5b54287aef7
+simshow(Array(patterns_wave[:, 61, :]))
+
 # ╔═╡ 9b119ca1-06ef-4781-9049-04a34f328068
 extrema(patterns_wave)
 
 # ╔═╡ d187a388-06b2-4f48-983b-925f20350923
-save_patterns("/tmp/boat_wave", patterns_wave, printed_i_wave, angles, target, overwrite=true)
+save_patterns("/home/felix/Documents/data/candidacy/boat_wave", patterns_wave, printed_i_wave, angles, target, overwrite=true)
 
 # ╔═╡ ff8970ab-0e04-4805-bb31-25e782a0f2ba
-save_patterns("/tmp/boat_radon", permutedims(patterns, (3, 2,1)), printed_i, angles, target, overwrite=true)
+save_patterns("/home/felix/Documents/data/candidacy/boat_radon", permutedims(patterns, (3, 2,1)), printed_i, angles, target, overwrite=true)
 
 # ╔═╡ 5a16bdce-418a-4ea7-bfde-e2461603f0df
 Revise.retry()
@@ -320,25 +356,13 @@ Revise.retry()
 target_printed =  simshow(Array(target)[:, :, z_i4])
 
 # ╔═╡ 6dd224fc-ba01-49a4-97ab-67d2712f810b
-save("/tmp/target.png", target_printed)
+save("/home/felix/Documents/data/candidacy/target.png", target_printed)
 
 # ╔═╡ 524a7c04-3b61-4132-bfdf-a16c1d64453e
-save("/tmp/wave_radon_simulation.png", radon_wave_printed)
+save("/home/felix/Documents/data/candidacy/wave_radon_simulation.png", radon_wave_printed)
 
 # ╔═╡ e5181ea2-12be-40eb-acae-5d4b9cc9b3c6
 plot_intensity(Array(target), Array(intensity_radon), (0.65, 0.75))
-
-# ╔═╡ 62753472-6c6a-4cc4-9473-f5e32b1a9735
-md"Threshold=$(@bind threshold4 Slider(0.0:0.01:1, show_value=true))"
-
-# ╔═╡ 4eb9b1c1-3969-483c-bc8e-d57530f6ce8e
-[simshow(intensity_radon[:, :, z_i4] .> threshold5) simshow(intensity_radon[:, :, z_i4], set_one=false) simshow(intensity_wave[:, :, z_i4] .> threshold4) simshow(simshow(intensity_wave[:, :, z_i4], set_one=false)) simshow(Array(target)[:, :, z_i4])]
-
-# ╔═╡ c272d6e0-80f5-4cb4-9d7f-f6ccc3857412
-wave_printed =  simshow(intensity_wave[:, :, z_i4] .> threshold4)
-
-# ╔═╡ 5c452db0-f96d-470b-84ec-2ba0751838c3
-save("/tmp/wave_simulation.png", wave_printed)
 
 # ╔═╡ 82039c35-f97c-476c-9efd-6a468bffe7f8
 
@@ -355,34 +379,13 @@ size(patterns_wave)
 # ╔═╡ 571a12c5-cea8-44d6-b5d0-25404f55d3c9
 sum(abs2, patterns_wave)
 
-# ╔═╡ edd4580e-4cf2-4623-a127-007547b88a03
-target = load_benchy((252, 252, 252), (200, 200, 200), "/home/felix/Downloads/benchy/files/output/");
-
-# ╔═╡ db29a6a5-2635-4fbe-8111-8c369fafa6e1
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	target = togoc(zeros(Float32, (100, 100, 100)))
-	
-	for i in 1:80
-		target[begin+10+i÷2:end-10-i÷2,begin+10+i÷3:end-10-i÷3, 10 + i] .= 1
-	end
-end
-  ╠═╡ =#
-
-# ╔═╡ 66e90a47-981e-4d19-81aa-90e262f64158
-# ╠═╡ disabled = true
-#=╠═╡
-target = select_region(target2, new_size=(100, 100, 100))
-  ╠═╡ =#
-
 # ╔═╡ Cell order:
 # ╠═30aab62e-a0eb-11ee-06db-11eb60e1a051
 # ╠═6f8d4329-9b45-410b-98a2-17cb22475060
 # ╠═f4772bab-4700-443f-9e86-7fb35b616551
 # ╠═ebd218dd-6e34-4d49-87bf-bb552c89db97
 # ╠═2a21b5cd-9a73-4da8-b5b6-2a59aeefaf03
-# ╟─d1880cdd-22b0-41d2-8887-d78f82081259
+# ╠═d1880cdd-22b0-41d2-8887-d78f82081259
 # ╠═c53419ef-e17c-4513-b621-dcf7a2996ea0
 # ╠═ac4e92e0-732f-4f81-954b-5944bd23ed76
 # ╠═23a00638-9061-4587-8f2d-1d65ba4a7492
@@ -422,6 +425,7 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═08d04781-b4c7-41da-8e2f-107d5719239a
 # ╠═29ac74c2-ab2a-45ec-835b-1c6f6c2886f9
 # ╠═53c2c266-e0ae-4fd8-9f90-e1cf700cdba8
+# ╠═b0a3f7bc-c435-450b-9429-60b3c9cac929
 # ╠═902720fb-962d-4d4f-9eca-e0812d031871
 # ╟─575ba3c2-1f80-4193-98ad-fdf0e73341d8
 # ╠═8ce5a252-9fac-47b3-a84e-351ba723c243
@@ -434,6 +438,8 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╟─463b7a89-4df0-4442-8d6e-2b6b251fbc1b
 # ╠═19c2d9dd-ec68-420e-9d06-2c66ddbe0125
 # ╠═c443703d-cd2a-4e2a-bfd0-742b4fcb001f
+# ╠═d6624c7d-9266-4a41-843e-ddd54bcda7ec
+# ╠═6c106f9c-0690-4170-a383-5143376093e1
 # ╟─347a0bc9-e387-4dab-a74c-3ff5d5f1a33a
 # ╠═b86d65cd-b52f-405d-874a-7a8f6fce732e
 # ╠═85aa66e4-fc61-4e81-9d1c-8bce66ff51c6
@@ -441,13 +447,15 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═fc5c2bf9-9aa1-4391-82f0-bf7c538d6985
 # ╠═4a9d17be-f8f2-4bab-aa66-ee71077acaec
 # ╠═fd4e50a4-1a94-498d-9fd5-0274424f97fd
+# ╠═73e14d8f-a76a-4ba9-a368-aa743da47160
 # ╠═8c389472-7bcc-4a3d-af1d-de4ad969a077
 # ╠═1ffd0a6b-c413-46c0-a5c0-181b36f13c96
 # ╠═8e68bbcb-f648-47fe-81ef-305d4d6e8ec2
 # ╠═e0792c95-72ba-4af2-add3-fe50cea3cc80
 # ╠═4eb9b1c1-3969-483c-bc8e-d57530f6ce8e
-# ╠═e0fd1a8a-aa2b-4c5a-afe0-6c346b340589
-# ╠═70115b27-c18d-4e5e-8be7-87af641e751b
+# ╟─62753472-6c6a-4cc4-9473-f5e32b1a9735
+# ╟─e0fd1a8a-aa2b-4c5a-afe0-6c346b340589
+# ╟─70115b27-c18d-4e5e-8be7-87af641e751b
 # ╠═c272d6e0-80f5-4cb4-9d7f-f6ccc3857412
 # ╠═9e6cbeef-08b7-4b63-98a1-729875ef05e4
 # ╠═5c452db0-f96d-470b-84ec-2ba0751838c3
@@ -456,6 +464,7 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═b3bc4f92-2b45-42f4-942f-685726fcd201
 # ╠═e3ea1e0d-4834-46d6-8417-7d10851df5f3
 # ╠═7a41d265-ab8f-496f-b36a-d0072131e91b
+# ╠═92dbd9d4-314b-407c-9420-a5b54287aef7
 # ╠═9b119ca1-06ef-4781-9049-04a34f328068
 # ╠═d187a388-06b2-4f48-983b-925f20350923
 # ╠═ff8970ab-0e04-4805-bb31-25e782a0f2ba
@@ -464,7 +473,6 @@ target = select_region(target2, new_size=(100, 100, 100))
 # ╠═6dd224fc-ba01-49a4-97ab-67d2712f810b
 # ╠═524a7c04-3b61-4132-bfdf-a16c1d64453e
 # ╠═e5181ea2-12be-40eb-acae-5d4b9cc9b3c6
-# ╠═62753472-6c6a-4cc4-9473-f5e32b1a9735
 # ╠═82039c35-f97c-476c-9efd-6a468bffe7f8
 # ╠═ddd1f894-dde5-46ab-8559-ec5aee176bb6
 # ╠═6eb8d6c6-029a-46cd-9ab3-bfd9a3133c69
