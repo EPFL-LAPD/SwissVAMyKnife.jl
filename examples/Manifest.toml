@@ -2,7 +2,7 @@
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "31d6a47ecb49d304c4c5f04c3091f29c19d949fb"
+project_hash = "3bba2a925057576fd83870f68f1c0d94e8dc6ca1"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "41c37aa88889c171f1300ceac1313c06e891d245"
@@ -1860,7 +1860,7 @@ uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "7.2.1+1"
 
 [[deps.SwissVAMyKnife]]
-deps = ["CUDA", "ChainRulesCore", "DiffImageRotation", "FFTW", "FileIO", "HDF5", "ImageShow", "IndexFunArrays", "Optim", "Plots", "RadonKA", "WaveOpticsPropagation", "Zygote"]
+deps = ["CUDA", "ChainRulesCore", "DiffImageRotation", "FFTW", "FileIO", "HDF5", "ImageShow", "IndexFunArrays", "Optim", "Parameters", "Plots", "RadonKA", "WaveOpticsPropagation", "Zygote"]
 path = ".."
 uuid = "fafdf525-54c7-48ec-ae29-528bd4cccfab"
 version = "0.1.0"

@@ -13,24 +13,26 @@ using FFTW
 using HDF5
 using FileIO
 using ImageShow
+using Parameters
 
 include("ray_optics.jl")
 include("wave_optics.jl")
 include("optimization.jl")
 
 
-export plot_intensity 
+export plot_histogram
 export save_patterns
 
 
 
-function plot_intensity(target, object_printed, thresholds)
+function plot_histogram(target, object_printed, thresholds; yscale=:log10)
     # :stephist vs :barhist
+    
     plot_font = "Computer Modern"
     default(fontfamily=plot_font,
 	    linewidth=2, framestyle=:box, label=nothing, grid=false)
-	plot(object_printed[target .== 0], seriestype=:barhist, bins=(0.0:0.01:1), xlim=(0.0, 1.0), label="dose distribution void", ylabel="voxel count", xlabel="normalized intensity",  ylim=(10, 10000000),  linewidth=1, legend=:topleft, yscale=:log10, size=(500, 350))
-	plot!(object_printed[target .== 1], seriestype=:barhist, bins=(0.0:0.01:1), xlim=(0.0, 1.0), label="dose distribution object", ylabel="voxel count", xlabel="normalized intensity",  ylim=(10, 10000000),  linewidth=1, legend=:topleft, yscale=:log10, size=(500, 350))
+	plot(object_printed[target .== 0], seriestype=:stephist, bins=(0.0:0.01:1), xlim=(0.0, 1.0), label="dose distribution void", ylabel="voxel count", xlabel="normalized intensity",  ylim=(10, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(500, 350))
+	plot!(object_printed[target .== 1], seriestype=:stephist, bins=(0.0:0.01:1), xlim=(0.0, 1.0), label="dose distribution object", ylabel="voxel count", xlabel="normalized intensity",  ylim=(10, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(500, 350))
 	plot!([thresholds[1], thresholds[1]], [1, 10000_000], label="lower threshold", linewidth=3)
 	plot!([thresholds[2], thresholds[2]], [1, 10000_000], label="upper threshold", linewidth=3)
 	#plot!([chosen_threshold, chosen_threshold], [1, 30000000], label="chosen threshold", linewidth=3)

@@ -1,7 +1,51 @@
 export optimize_patterns
 export printing_errors
+export WaveOpticsProblem
+
+export PropagationScheme, OptimizationParams
+export RayOptics, WaveOptics
+export OSMO, GradientBased
 
 leaky_relu(x) = max(oftype(x, 0.01) * x, x)
+
+abstract type PropagationScheme end
+abstract type OptimizationParams end
+
+@with_kw struct WaveOptics{T2, T, A, ToN} <: PropagationScheme
+    z::T2
+    λ::T
+    L::T
+    μ::ToN
+    angles::A
+end
+
+struct RayOptics{T, A} <: PropagationScheme
+    angles::A
+    μ::T
+end
+
+
+struct OSMO{I<:Integer, T} <: OptimizationParams
+    iterations::I
+    step_size::T
+end
+
+struct GradientBased{O, I<:Integer, F, L, T} <: OptimizationParams
+    optimizer::O
+    iterations::I
+    sum_f::F
+    loss::L
+    thresholds::Tuple{T, T}
+    
+    function GradientBased(; optimizer=LBFSG(), iterations=30,
+                             sum_f=abs2, loss=:object_space, thresholds=(0.65f0, 0.75f0))
+        return new{typeof(optimizer), typeof(iterations), 
+                   typeof(sum_f), typeof(loss), typeof(thresholds[1])}(optimizer, iterations, sum_f, loss, thresholds)
+    end
+end
+
+
+
 
 """
     optimize_patterns(target, angles, thresholds=(0.7f0, 0.8f0),
@@ -20,6 +64,75 @@ Optimize some `patterns` such that they print the object `target`.
 
 
 """
+function optimize_patterns(target, ps::WaveOptics, op::GradientBased)
+    angles = ps.angles
+    μ = ps.μ
+    L = ps.L
+    λ = ps.λ
+    z = ps.z
+
+    sum_f = op.sum_f
+    optimizer = op.optimizer
+    iterations = op.iterations
+    loss = op.loss
+    thresholds = op.thresholds
+
+    patterns_guess = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
+    
+    patterns_0 = similar(target, (size(target, 1), size(target, 2), size(angles, 1)))
+    fill!(patterns_0, 0)
+    patterns_0[:, 2:end, :] .= permutedims(patterns_guess, (3, 1, 2))
+    patterns_0 ./= maximum(patterns_0) .* 0.0001f0 
+    
+    AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)         
+    AS_abs2 = let target=target, AS=AS, langles=length(angles)
+            function AS_abs2(x)
+                abs2.(AS(abs2.(x) ./ langles .+ 0im)[1])
+            end
+    end
+    
+    fwd2 = let AS_abs2=AS_abs2, angles=angles
+        function fwd2(x)
+            fwd_wave(x, AS_abs2, angles)
+        end
+    end
+    
+    target_permuted = permutedims(target, (3, 2, 1))
+    fg! = make_fg!(fwd2, target_permuted, thresholds; sum_f, loss)
+    
+    # just get the max scaling value
+    #rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
+    patterns_0 .= 0
+    patterns_0[begin+8:end-8, begin+8:end-8, :] .= 1f-5#0.0001#0.000001
+    #patterns_0 .= 0.001
+    
+    res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, optimizer, 
+                         Optim.Options(iterations=iterations, store_trace=true))
+    
+    #return abs2.(patterns_0), fwd2(patterns_0), 0#res
+    printed = fwd2(res.minimizer)
+    printed ./= maximum(printed)
+    patterns = abs2.(res.minimizer)
+    
+    printed_perm = permutedims(printed, (3, 2, 1));
+    patterns_perm = permutedims(patterns, (1, 3, 2));
+    return patterns_perm, printed_perm, res
+end
+
+
+
+function optimize_patterns(target, ps::RayOptics, op::GradientBased)
+
+end
+
+
+# OSMO 
+function optimize_patterns(target, ps::RayOptics, op::OSMO)
+
+end
+
+
+
 function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:radon_iterative, 
                            μ=nothing, optimizer=LBFGS(), iterations=30,
                            sum_f=abs2, loss=:object_space,
@@ -56,46 +169,6 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
     elseif method == :radon_iterative
         return iterative_optimization(target, angles, μ; thresholds, iterations)
     elseif method == :wave
-        patterns_guess = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
-        
-        patterns_0 = similar(target, (size(target, 1), size(target, 2), size(angles, 1)))
-        fill!(patterns_0, 0)
-        patterns_0[:, 2:end, :] .= permutedims(patterns_guess, (3, 1, 2))
-        patterns_0 ./= maximum(patterns_0) .* 0.0001f0 
-
-        AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)         
-        AS_abs2 = let target=target, AS=AS, langles=length(angles)
-	            function AS_abs2(x)
-		            abs2.(AS(abs2.(x) ./ langles .+ 0im)[1])
-	            end
-        end
-
-        fwd2 = let AS_abs2=AS_abs2, angles=angles
-            function fwd2(x)
-                fwd_wave(x, AS_abs2, angles)
-            end
-        end
-       
-        target_permuted = permutedims(target, (3, 2, 1))
-        fg! = make_fg!(fwd2, target_permuted, thresholds; sum_f, loss)
-        
-        # just get the max scaling value
-        #rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
-        patterns_0 .= 0
-        patterns_0[begin+8:end-8, begin+8:end-8, :] .= 1f-5#0.0001#0.000001
-        #patterns_0 .= 0.001
-        
-        res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, optimizer, 
-                             Optim.Options(iterations=iterations, store_trace=true))
-
-        #return abs2.(patterns_0), fwd2(patterns_0), 0#res
-        printed = fwd2(res.minimizer)
-        printed ./= maximum(printed)
-        patterns = abs2.(res.minimizer)
-
-        printed_perm = permutedims(printed, (3, 2, 1));
-        patterns_perm = permutedims(patterns, (1, 3, 2));
-        return patterns_perm, printed_perm, res
     else
         throw(ArgumentError("No method such as $method"))
     end

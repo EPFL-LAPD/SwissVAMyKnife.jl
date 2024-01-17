@@ -32,7 +32,7 @@ function ChainRulesCore.rrule(::typeof(fwd_wave), x, AS_abs2, angles)
 		tmp_rot .= 0;
 		for (i, angle) in enumerate(angles)
 			CUDA.@sync tmp::CuArray = Zygote._pullback(AS_abs2, view(x, :, :, i))[2](
-					PermutedDimsArray(imrotate!(tmp_rot, PermutedDimsArray(ȳ, (2, 3, 1)), angle, adjoint=true), (3, 1, 2))
+					PermutedDimsArray(DiffImageRotation.∇imrotate!(tmp_rot, PermutedDimsArray(ȳ, (2, 3, 1)), res, angle), (3, 1, 2))
 			)[2]
 			tmp_rot .= 0
 			#@show sum(tmp)
