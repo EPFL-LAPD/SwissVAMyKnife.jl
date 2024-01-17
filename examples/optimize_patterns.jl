@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.35
 
 using Markdown
 using InteractiveUtils
@@ -57,17 +57,6 @@ TableOfContents()
 # ╔═╡ 9fb9061f-169f-48d0-9acf-120f533d235e
 md"# Load Target Pixels for Print"
 
-# ╔═╡ a6fdcf6f-24dc-44cd-996f-8eb8f5b651af
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	target = zeros(Float32, (50, 50, 50));
-	target .= box(target, (25, 25, 25))
-	#target .-= box(target, (50, 70, 5))
-	target = togoc(target)
-end;
-  ╠═╡ =#
-
 # ╔═╡ 2a605106-9eb3-426e-91fa-7900c24776fe
 function load_benchy(sz, sz_file, path)
 	target = zeros(Float32, sz_file)
@@ -81,34 +70,19 @@ function load_benchy(sz, sz_file, path)
 	return togoc(target2)
 end
 
-# ╔═╡ edd4580e-4cf2-4623-a127-007547b88a03
-target = load_benchy((252, 252, 252), (200, 200, 200), "/home/felix/Downloads/benchy/files/output/");
-
 # ╔═╡ f90cf4dd-6844-4515-a877-19b0d6a07f3f
-simshow(Array(target[:, :, 25]))
-
-# ╔═╡ 66e90a47-981e-4d19-81aa-90e262f64158
-# ╠═╡ disabled = true
 #=╠═╡
-target = select_region(target2, new_size=(100, 100, 100))
+simshow(Array(target[:, :, 25]))
   ╠═╡ =#
 
 # ╔═╡ 29461391-9128-4411-b33e-97f3ce6625a7
+#=╠═╡
 @bind izzz Slider(1:size(target, 3), show_value=true)
+  ╠═╡ =#
 
 # ╔═╡ 5b45efde-da5a-45af-968b-208d04e43517
-simshow(Array(target[:, :, izzz]))
-
-# ╔═╡ db29a6a5-2635-4fbe-8111-8c369fafa6e1
-# ╠═╡ disabled = true
 #=╠═╡
-begin
-	target = togoc(zeros(Float32, (100, 100, 100)))
-	
-	for i in 1:80
-		target[begin+10+i÷2:end-10-i÷2,begin+10+i÷3:end-10-i÷3, 10 + i] .= 1
-	end
-end
+simshow(Array(target[:, :, izzz]))
   ╠═╡ =#
 
 # ╔═╡ 8f12a113-6772-4567-95bc-d43f72d303ca
@@ -148,10 +122,14 @@ plot(res, title="Loss over iterations", xlabel="Iterations", ylabel="Loss", ysca
 md"Threshold=$(@bind threshold Slider(0.0:0.01:1, show_value=true))"
 
 # ╔═╡ c4865085-0b1f-42be-ad88-9b8d694278e5
+#=╠═╡
 md"depth in z=$(@bind z_i Slider(1:1:size(target, 3), show_value=true))"
+  ╠═╡ =#
 
 # ╔═╡ 6d78294c-4c92-457a-91de-4bd8a881de71
+#=╠═╡
 [simshow(Array(printed_i[:,:, z_i]), cmap=:turbo) simshow(Array(printed_i[:, :, z_i]) .> threshold) simshow(Array(target[:, :, z_i]))]
+  ╠═╡ =#
 
 # ╔═╡ b5cdb60e-6294-4caf-b8b3-9bef8db0d137
 md"angle=$(@bind i_angle Slider(1:1:size(patterns, 2), show_value=true))"
@@ -160,13 +138,19 @@ md"angle=$(@bind i_angle Slider(1:1:size(patterns, 2), show_value=true))"
 simshow(Array(patterns[:, i_angle, :])', cmap=:turbo)
 
 # ╔═╡ b953013d-aae8-4b90-89ed-d76eb190bba4
+#=╠═╡
 p1 = plot_intensity(Array(target[begin:1:end]), Array(printed_i[begin:1:end]), (0.65, 0.75))
+  ╠═╡ =#
 
 # ╔═╡ 0e3585a4-8079-4272-b0d1-bd4949dd872a
+#=╠═╡
 savefig(p1, "/home/felix/Documents/data/candidacy/histogram_radon_boat.pdf")
+  ╠═╡ =#
 
 # ╔═╡ 0e167ace-96ce-443a-adcc-ae06229a2d5f
+#=╠═╡
 size(target)
+  ╠═╡ =#
 
 # ╔═╡ 238931ba-9ce9-496a-b424-a9f1682b6d99
 md"# Wave Optics"
@@ -178,7 +162,9 @@ L = 400f-6
 λ = 405f-9 ./ 1.5
 
 # ╔═╡ ad64cd2d-158f-41c1-af8d-b1b713a8b502
+#=╠═╡
 z = togoc(range(0, L, size(target, 1)));
+  ╠═╡ =#
 
 # ╔═╡ 41f01110-9962-44d1-ae97-2fa711a0c521
 SwissVAMyKnife.leaky_relu.(CUDA.rand(2,2))
@@ -208,19 +194,27 @@ simshow(Array((patterns_wave[:, i_angle2, :])), γ=1, cmap=:turbo)
 extrema(patterns_wave)
 
 # ╔═╡ 60c856a5-ff82-4de0-86b0-8c3ce8d03049
+#=╠═╡
 p2 = plot_intensity(Array(target), Array(printed_i_wave), (0.65, 0.75))
+  ╠═╡ =#
 
 # ╔═╡ f6f98113-d480-4a0e-9acd-60043c70b4cb
+#=╠═╡
 savefig(p2, "/home/felix/Documents/data/candidacy/histogram_wave_boat.pdf")
+  ╠═╡ =#
 
 # ╔═╡ 105db6be-382f-4521-837c-bc7d39a3dce9
 md"Threshold=$(@bind threshold3 Slider(0.0:0.01:1, show_value=true))"
 
 # ╔═╡ afddd44a-3b23-48d1-aeb6-a7b9a05e303b
+#=╠═╡
 md"depth in z=$(@bind z_i3 Slider(1:1:size(target, 3), show_value=true))"
+  ╠═╡ =#
 
 # ╔═╡ 71247ebd-9be4-4328-a1e6-a2fa82d3ae2a
+#=╠═╡
 [simshow(Array(printed_i_wave[:,:, z_i3]), cmap=:turbo, set_one=false) simshow(Array(printed_i_wave[:, :, z_i3]) .> threshold3) simshow(Array(target[:, :, z_i3]))]
+  ╠═╡ =#
 
 # ╔═╡ 463b7a89-4df0-4442-8d6e-2b6b251fbc1b
 # ╠═╡ disabled = true
@@ -232,16 +226,24 @@ plot([a.value for a in res.trace], title="Loss over iterations", xlabel="Iterati
 plot([a.value for a in res_wave.trace], title="Loss over iterations", xlabel="Iterations", ylabel="Loss", yscale=:log10)
 
 # ╔═╡ c443703d-cd2a-4e2a-bfd0-742b4fcb001f
+#=╠═╡
 SwissVAMyKnife.plot_intensity(Array(target), Array(printed_i), thresholds)
+  ╠═╡ =#
 
 # ╔═╡ d6624c7d-9266-4a41-843e-ddd54bcda7ec
+#=╠═╡
 printing_errors(printed_i_wave, target, thresholds)
+  ╠═╡ =#
 
 # ╔═╡ 6c106f9c-0690-4170-a383-5143376093e1
+#=╠═╡
 printing_errors(printed_i, target, thresholds)
+  ╠═╡ =#
 
 # ╔═╡ 347a0bc9-e387-4dab-a74c-3ff5d5f1a33a
+#=╠═╡
 [simshow(Array(printed_i[:,:, z_i]), cmap=:turbo) simshow(Array(printed_i[:, :, z_i]) .> threshold) simshow(Array(target[:, :, z_i]))]
+  ╠═╡ =#
 
 # ╔═╡ b86d65cd-b52f-405d-874a-7a8f6fce732e
 simshow(Array(printed_i[:, 20, :]))
@@ -256,6 +258,7 @@ simshow(Array(patterns[:, 4, :]), cmap=:turbo)
 sum(patterns) / length(patterns)
 
 # ╔═╡ 4a9d17be-f8f2-4bab-aa66-ee71077acaec
+#=╠═╡
 begin
 	         AS, _ = AngularSpectrum(permutedims(patterns_wave, (1, 3,2))[:, :, 1] .+ 0im, z, λ, L, padding=false)    
 	         AS_abs2 = let target=target, AS=AS
@@ -270,12 +273,17 @@ begin
 	             end 
 	         end
 end
+  ╠═╡ =#
 
 # ╔═╡ fd4e50a4-1a94-498d-9fd5-0274424f97fd
+#=╠═╡
 simshow(permutedims(Array(fwd2(sqrt.(permutedims(patterns_wave, (1,3,2))))), (3,2,1)))[:, :, 20]
+  ╠═╡ =#
 
 # ╔═╡ 73e14d8f-a76a-4ba9-a368-aa743da47160
+#=╠═╡
 extrema((permutedims(Array(fwd2(sqrt.(permutedims(0 .* patterns_wave, (1,3,2))))), (3,2,1)))[:, :, 20])
+  ╠═╡ =#
 
 # ╔═╡ 8c389472-7bcc-4a3d-af1d-de4ad969a077
 size(patterns)
@@ -284,16 +292,20 @@ size(patterns)
 size(patterns_wave)
 
 # ╔═╡ 8e68bbcb-f648-47fe-81ef-305d4d6e8ec2
+#=╠═╡
 begin
 	intensity_radon = permutedims(Array(fwd2(sqrt.(permutedims(select_region(permutedims(patterns, (3,2,1)), new_size=(size(patterns,1)+1, size(patterns)[2:3]...)), (1,3,2))).^0.5f0)), (3,2,1))
 	intensity_radon ./= maximum(intensity_radon)
 end;
+  ╠═╡ =#
 
 # ╔═╡ e0792c95-72ba-4af2-add3-fe50cea3cc80
+#=╠═╡
 begin
 	intensity_wave = permutedims(Array(fwd2(sqrt.(permutedims(patterns_wave, (1,3,2))))), (3,2,1))
 	intensity_wave ./= maximum(intensity_wave)
 end;
+  ╠═╡ =#
 
 # ╔═╡ 62753472-6c6a-4cc4-9473-f5e32b1a9735
 md"Threshold=$(@bind threshold4 Slider(0.0:0.01:1, show_value=true))"
@@ -302,19 +314,27 @@ md"Threshold=$(@bind threshold4 Slider(0.0:0.01:1, show_value=true))"
 md"Threshold=$(@bind threshold5 Slider(0.0:0.01:1, show_value=true))"
 
 # ╔═╡ 70115b27-c18d-4e5e-8be7-87af641e751b
+#=╠═╡
 md"depth in z=$(@bind z_i4 Slider(1:1:size(target, 3), show_value=true))"
+  ╠═╡ =#
 
 # ╔═╡ 4eb9b1c1-3969-483c-bc8e-d57530f6ce8e
+#=╠═╡
 [simshow(intensity_radon[:, :, z_i4] .> threshold5) simshow(intensity_radon[:, :, z_i4], set_one=false) simshow(intensity_wave[:, :, z_i4] .> threshold4) simshow(simshow(intensity_wave[:, :, z_i4], set_one=false)) simshow(Array(target)[:, :, z_i4])]
+  ╠═╡ =#
 
 # ╔═╡ c272d6e0-80f5-4cb4-9d7f-f6ccc3857412
+#=╠═╡
 wave_printed =  simshow(intensity_wave[:, :, z_i4] .> threshold4)
+  ╠═╡ =#
 
 # ╔═╡ 9e6cbeef-08b7-4b63-98a1-729875ef05e4
 size(patterns_wave)
 
 # ╔═╡ 5c452db0-f96d-470b-84ec-2ba0751838c3
+#=╠═╡
 save("/home/felix/Documents/data/candidacy/wave_simulation.png", wave_printed)
+  ╠═╡ =#
 
 # ╔═╡ c43d8d6f-a4da-4704-b142-6eda10aa8833
 Revise.retry()
@@ -323,7 +343,9 @@ Revise.retry()
 extrema(printed_i_wave)
 
 # ╔═╡ b3bc4f92-2b45-42f4-942f-685726fcd201
+#=╠═╡
 radon_wave_printed =  simshow(intensity_radon[:, :, z_i4] .> threshold5)
+  ╠═╡ =#
 
 # ╔═╡ e3ea1e0d-4834-46d6-8417-7d10851df5f3
 begin
@@ -344,31 +366,45 @@ simshow(Array(patterns_wave[:, 61, :]))
 extrema(patterns_wave)
 
 # ╔═╡ d187a388-06b2-4f48-983b-925f20350923
+#=╠═╡
 save_patterns("/home/felix/Documents/data/candidacy/boat_wave", patterns_wave, printed_i_wave, angles, target, overwrite=true)
+  ╠═╡ =#
 
 # ╔═╡ ff8970ab-0e04-4805-bb31-25e782a0f2ba
+#=╠═╡
 save_patterns("/home/felix/Documents/data/candidacy/boat_radon", permutedims(patterns, (3, 2,1)), printed_i, angles, target, overwrite=true)
+  ╠═╡ =#
 
 # ╔═╡ 5a16bdce-418a-4ea7-bfde-e2461603f0df
 Revise.retry()
 
 # ╔═╡ 1e07c210-3e27-44e5-8b8f-07811d8ef917
+#=╠═╡
 target_printed =  simshow(Array(target)[:, :, z_i4])
+  ╠═╡ =#
 
 # ╔═╡ 6dd224fc-ba01-49a4-97ab-67d2712f810b
+#=╠═╡
 save("/home/felix/Documents/data/candidacy/target.png", target_printed)
+  ╠═╡ =#
 
 # ╔═╡ 524a7c04-3b61-4132-bfdf-a16c1d64453e
+#=╠═╡
 save("/home/felix/Documents/data/candidacy/wave_radon_simulation.png", radon_wave_printed)
+  ╠═╡ =#
 
 # ╔═╡ e5181ea2-12be-40eb-acae-5d4b9cc9b3c6
+#=╠═╡
 plot_intensity(Array(target), Array(intensity_radon), (0.65, 0.75))
+  ╠═╡ =#
 
 # ╔═╡ 82039c35-f97c-476c-9efd-6a468bffe7f8
 
 
 # ╔═╡ ddd1f894-dde5-46ab-8559-ec5aee176bb6
+#=╠═╡
 sum(abs2, AS(sqrt.(patterns_wave[:, :, 10]))[1])
+  ╠═╡ =#
 
 # ╔═╡ 6eb8d6c6-029a-46cd-9ab3-bfd9a3133c69
 sum(abs2, patterns_wave[:, :, 10])
@@ -378,6 +414,40 @@ size(patterns_wave)
 
 # ╔═╡ 571a12c5-cea8-44d6-b5d0-25404f55d3c9
 sum(abs2, patterns_wave)
+
+# ╔═╡ db29a6a5-2635-4fbe-8111-8c369fafa6e1
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	target = togoc(zeros(Float32, (100, 100, 100)))
+	
+	for i in 1:80
+		target[begin+10+i÷2:end-10-i÷2,begin+10+i÷3:end-10-i÷3, 10 + i] .= 1
+	end
+end
+  ╠═╡ =#
+
+# ╔═╡ 66e90a47-981e-4d19-81aa-90e262f64158
+# ╠═╡ disabled = true
+#=╠═╡
+target = select_region(target2, new_size=(100, 100, 100))
+  ╠═╡ =#
+
+# ╔═╡ a6fdcf6f-24dc-44cd-996f-8eb8f5b651af
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	target = zeros(Float32, (50, 50, 50));
+	target .= box(target, (25, 25, 25))
+	#target .-= box(target, (50, 70, 5))
+	target = togoc(target)
+end;
+  ╠═╡ =#
+
+# ╔═╡ edd4580e-4cf2-4623-a127-007547b88a03
+#=╠═╡
+target = load_benchy((252, 252, 252), (200, 200, 200), "/home/felix/Downloads/benchy/files/output/");
+  ╠═╡ =#
 
 # ╔═╡ Cell order:
 # ╠═30aab62e-a0eb-11ee-06db-11eb60e1a051
