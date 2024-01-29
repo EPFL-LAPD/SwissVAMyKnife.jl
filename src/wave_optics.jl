@@ -35,14 +35,8 @@ function ChainRulesCore.rrule(::typeof(fwd_wave), x, AS_abs2, angles)
 					PermutedDimsArray(DiffImageRotation.∇imrotate!(tmp_rot, PermutedDimsArray(ȳ, (2, 3, 1)), res, angle), (3, 1, 2))
 			)[2]
 			tmp_rot .= 0
-			#@show sum(tmp)
-			#@show size(x), angle, size(tmp)
 			grad[:, :, i] .= tmp
 		end
-        #grad[begin:begin+5, :, :] .= 0
-        #grad[end-5:end, :, :] .= 0
-        #grad[:, begin:begin+5, :] .= 0
-        #grad[:, end-5:end, :] .= 0
 		return NoTangent(), grad, NoTangent(), NoTangent()
 	end
 	end
