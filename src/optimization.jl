@@ -6,7 +6,6 @@ export PropagationScheme, OptimizationParams
 export RayOptics, WaveOptics
 export OSMO, GradientBased
 
-leaky_relu(x) = max(oftype(x, 0.01) * x, x)
 
 abstract type PropagationScheme end
 abstract type OptimizationParams end
@@ -84,10 +83,10 @@ function optimize_patterns(target, ps::WaveOptics, op::GradientBased)
     patterns_0[:, 2:end, :] .= permutedims(patterns_guess, (3, 1, 2))
     patterns_0 ./= maximum(patterns_0) .* 0.0001f0 
     
-    AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)         
+    AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)
     AS_abs2 = let target=target, AS=AS, langles=length(angles)
             function AS_abs2(x)
-                abs2.(AS(abs2.(x) ./ langles .+ 0im)[1])
+                abs2.(AS(NNlib.relu.(x) .+ 0im)[1]) ./ langles
             end
     end
     
@@ -101,18 +100,13 @@ function optimize_patterns(target, ps::WaveOptics, op::GradientBased)
     fg! = make_fg!(fwd2, target_permuted, thresholds; sum_f, loss)
     
     # just get the max scaling value
-    #rec0 = (max.(0, radon(RadonKA.filtered_backprojection(radon(target, angles, μ), angles, μ), angles, μ)))
-    patterns_0 .= 0
-    patterns_0[begin+8:end-8, begin+8:end-8, :] .= 1f-5#0.0001#0.000001
-    #patterns_0 .= 0.001
+    patterns_0 .= 0.1
     
     res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, optimizer, 
                          Optim.Options(iterations=iterations, store_trace=true))
     
-    #return abs2.(patterns_0), fwd2(patterns_0), 0#res
     printed = fwd2(res.minimizer)
-    printed ./= maximum(printed)
-    patterns = abs2.(res.minimizer)
+    patterns = NNlib.relu.(res.minimizer)
     
     printed_perm = permutedims(printed, (3, 2, 1));
     patterns_perm = permutedims(patterns, (1, 3, 2));
@@ -153,10 +147,6 @@ function optimize_patterns(target, angles; thresholds=(0.7f0, 0.8f0), method=:ra
         rec0 ./= maximum(target2)
         rec0 .= sqrt.(rec0)
 
-        #return rec0, iradon(abs2.(rec0), angles, μ), rec0 
-        #rec0 = similar(target, (size(target,1) - 1, size(angles, 1), size(target, 3)))
-        # dumb initial guess
-        #fill!(rec0, 1)
         res = Optim.optimize(Optim.only_fg!(fg!), rec0, optimizer, 
                              Optim.Options(iterations=iterations, store_trace=true))
 
@@ -193,16 +183,20 @@ function make_fg!(fwd, target, thresholds; sum_f=abs2, loss)
 	notobject = iszero.(target)
 	isobject = isone.(target)
 
-    loss_f = let sum_f=sum_f 
+    loss_f = let sum_f=sum_f, mask=mask 
         if loss == :object_space
             @inline function loss_f3(f::AbstractArray{T}, thresholds, isobject, notobject) where T
-                return (sum(sum_f, max.(0, T(thresholds[2]) .- view(f, isobject))) + 
-                        sum(sum_f, max.(0, view(f, notobject) .- T(thresholds[1]))))
+                #f = f .* mask
+                return (sum(abs2, NNlib.relu.(T(thresholds[2]) .- view(f, isobject))) + 
+                        sum(abs2, NNlib.relu.(view(f, isobject) .- 1)) + 
+                        sum(abs2, NNlib.relu.(view(f, notobject) .- T(thresholds[1])))
+                       )
             end
         elseif loss == :leaky_relu
             @inline function loss_f2(f::AbstractArray{T}, thresholds, isobject, notobject) where T
-                return (sum(leaky_relu.(T(thresholds[2]) .- view(f, isobject))) + 
-                        sum(leaky_relu.(view(f, notobject) .- T(thresholds[1]))))
+                return (sum(relu.(T(thresholds[2]) .- view(f, isobject))) + 
+                        sum(NNlib.relu.(view(f, isobject) .- 1)) + 
+                        sum((NNlib.leakyrelu.(view(f, notobject) .- T(thresholds[1]), 0.01f0))))
             end
         else
             throw(ArgumentError("$loss not possible"))
@@ -213,11 +207,12 @@ function make_fg!(fwd, target, thresholds; sum_f=abs2, loss)
         function L_VAM(x::AbstractArray{T}) where T
 			f = fwd(x)
 
-            # possible speed-up to avoid max here
-            m = maximum(f)
-            if !iszero(m)
-			    f = f ./ m 
-            end
+            #f = max.(1, f)
+            # in case some parts would receive too much intensity, try to normalize
+            # it to 1.
+            #@show "div max"
+            #m = maximum(f)
+            #f = f ./ ifelse(m>1, m, 1) 
             return loss_f(f, thresholds, isobject, notobject)
 		end
     end
@@ -229,9 +224,9 @@ function make_fg!(fwd, target, thresholds; sum_f=abs2, loss)
             # Zygote calculates both derivative and loss, therefore do everything in one step
             if G !== nothing
                 # no clue why _pullback
-                y, back = Zygote._pullback(loss, x)
+                y, back = Zygote.withgradient(loss, x)
                 # calculate gradient
-                G .= back(1)[2]
+                G .= back[1]#back(1)[2]
                 if F !== nothing
                     return y
                 end
@@ -248,10 +243,10 @@ end
 
 
 """
-    printing_errors(printed, target, thresholds)
+    printing_errors(target, printed, thresholds)
 
 """
-function printing_errors(printed, target, thresholds)
+function printing_errors(target, printed, thresholds)
     isobject = target .≈ 1
     notobject = target .≈ 0
 	mid_thresh = (thresholds[2] + thresholds[1]) / 2
