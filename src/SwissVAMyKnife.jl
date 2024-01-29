@@ -14,6 +14,7 @@ using HDF5
 using FileIO
 using ImageShow
 using Parameters
+using NNlib
 
 include("ray_optics.jl")
 include("wave_optics.jl")
@@ -31,8 +32,9 @@ function plot_histogram(target, object_printed, thresholds; yscale=:log10)
     plot_font = "Computer Modern"
     default(fontfamily=plot_font,
 	    linewidth=2, framestyle=:box, label=nothing, grid=false)
-	plot(object_printed[target .== 0], seriestype=:stephist, bins=(0.0:0.01:1), xlim=(0.0, 1.0), label="dose distribution void", ylabel="voxel count", xlabel="normalized intensity",  ylim=(10, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(500, 350))
-	plot!(object_printed[target .== 1], seriestype=:stephist, bins=(0.0:0.01:1), xlim=(0.0, 1.0), label="dose distribution object", ylabel="voxel count", xlabel="normalized intensity",  ylim=(10, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(500, 350))
+    m = maximum(object_printed)
+	plot(object_printed[target .== 0], seriestype=:stephist, bins=(0.0:0.01:m), xlim=(0.0, m), label="dose distribution void", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(500, 350))
+	plot!(object_printed[target .== 1], seriestype=:stephist, bins=(0.0:0.01:m), xlim=(0.0, m), label="dose distribution object", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(500, 350))
 	plot!([thresholds[1], thresholds[1]], [1, 10000_000], label="lower threshold", linewidth=3)
 	plot!([thresholds[2], thresholds[2]], [1, 10000_000], label="upper threshold", linewidth=3)
 	#plot!([chosen_threshold, chosen_threshold], [1, 30000000], label="chosen threshold", linewidth=3)
@@ -80,7 +82,7 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
 
 
     # convert to proper Grayscale image
-    patterns = simshow(patterns)
+    patterns = simshow(patterns, cmap=:turbo)
     for i in 1:size(angles, 1)
         number = lpad(string(i), 5, "0")
         fname = joinpath(fpath_images, number * ".png")
@@ -89,6 +91,23 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
         end
         save(fname, view(patterns, :, i, :))
     end
+    
+
+
+    fpath_images = joinpath(fpath, "printed_png")
+    isdir(fpath) || mkpath(fpath_images) 
+    # convert to proper Grayscale image
+    printed = simshow(printed, cmap=:turbo)
+    for i in 1:size(printed, 1)
+        number = lpad(string(i), 5, "0")
+        fname = joinpath(fpath_images, number * ".png")
+        if isfile(fname) && overwrite==false
+            throw(ArgumentError("png file exists already"))
+        end
+        save(fname, view(printed, :, :, i))
+    end
+
+
 
     return 0
 end
