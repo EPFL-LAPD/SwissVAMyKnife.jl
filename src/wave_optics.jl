@@ -17,7 +17,7 @@ function fwd_wave(x, AS_abs2, angles)
 		CUDA.@sync intensity .+= PermutedDimsArray(imrotate!(tmp_rot, PermutedDimsArray(tmp, (2, 3, 1)), angle), (3, 1, 2))
 		tmp_rot .= 0
 	end
-	return intensity# .* mask
+	return intensity
 end
 
 
@@ -31,7 +31,7 @@ function ChainRulesCore.rrule(::typeof(fwd_wave), x, AS_abs2, angles)
 		tmp_rot = similar(res);
 		tmp_rot .= 0;
 		for (i, angle) in enumerate(angles)
-			CUDA.@sync tmp::CuArray = Zygote._pullback(AS_abs2, view(x, :, :, i))[2](
+			CUDA.@sync tmp = Zygote._pullback(AS_abs2, view(x, :, :, i))[2](
 					PermutedDimsArray(DiffImageRotation.∇imrotate!(tmp_rot, PermutedDimsArray(ȳ, (2, 3, 1)), res, angle), (3, 1, 2))
 			)[2]
 			tmp_rot .= 0
@@ -39,6 +39,10 @@ function ChainRulesCore.rrule(::typeof(fwd_wave), x, AS_abs2, angles)
 			#@show size(x), angle, size(tmp)
 			grad[:, :, i] .= tmp
 		end
+        #grad[begin:begin+5, :, :] .= 0
+        #grad[end-5:end, :, :] .= 0
+        #grad[:, begin:begin+5, :] .= 0
+        #grad[:, end-5:end, :] .= 0
 		return NoTangent(), grad, NoTangent(), NoTangent()
 	end
 	end
