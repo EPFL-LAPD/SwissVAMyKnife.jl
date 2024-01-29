@@ -100,7 +100,7 @@ function optimize_patterns(target, ps::WaveOptics, op::GradientBased)
     fg! = make_fg!(fwd2, target_permuted, thresholds; sum_f, loss)
     
     # just get the max scaling value
-    patterns_0 .= 0.1
+    patterns_0 .= 0.01f0
     
     res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, optimizer, 
                          Optim.Options(iterations=iterations, store_trace=true))
