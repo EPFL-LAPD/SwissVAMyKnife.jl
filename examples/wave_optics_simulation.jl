@@ -117,11 +117,11 @@ p = plot_histogram(Array(target), Array(printed), (0.7, 0.8); yscale=:log10)
 # ╔═╡ ff9624f4-e6f4-4f8b-9dc3-22ea59127511
 SwissVAMyKnife.printing_errors(target, printed, (0.7, 0.8))
 
-# ╔═╡ d9e9418a-fc4f-4984-a659-1abd53c12dac
-savefig(p, "/home/felix/Documents/data/wave_optics_simulation_L=400f-6_N=256_different_init/histogram.pdf")
-
 # ╔═╡ 82b58277-ea83-471e-a9e3-df340fa0f941
-save_patterns("/home/felix/Documents/data/wave_optics_simulation_L=400f-6_N=256_different_init/", patterns, printed, angles, target; overwrite=true)
+save_patterns("/home/felix/Documents/data/wave_optics_simulation_L=$(round(L, digits=6))_N=$(size(target,1))/", patterns, printed, angles, target; overwrite=true)
+
+# ╔═╡ d9e9418a-fc4f-4984-a659-1abd53c12dac
+savefig(p, "/home/felix/Documents/data/wave_optics_simulation_L=$(round(L, digits=6))_N=$(size(target,1))/histogram.pdf")
 
 # ╔═╡ c50e3165-0bc0-4698-83da-a14b533997fd
 begin
@@ -143,21 +143,6 @@ angles2 = angles[iangle3:iangle3]
 
 # ╔═╡ 7e29a5d9-fa0a-4d74-8e4e-2604dec1a23d
 patterns2 = CuArray(PermutedDimsArray(patterns, (1,3,2)));
-
-# ╔═╡ bd063dc1-9464-4bc0-a264-ed44600a700a
-AS2 = AngularSpectrum(patterns2[:, :, 1] .+ 0im, z, λ, L, padding=false)
-
-# ╔═╡ 03b8f24d-9636-4d1f-a4f8-ec330c1c4e57
-simshow(Array(AS2[1].HW[:, :, end]))
-
-# ╔═╡ 905ac566-93d4-4964-92d6-e3168d8d5b8f
-simshow((Array(AS2[1].HW[:, :, 1])))
-
-# ╔═╡ 0e25d327-adc3-4f67-a4d0-ce718687b16c
-findmax(abs.(Array(AS2[1].HW[:, :, 1])))
-
-# ╔═╡ 44d92be1-e548-4e98-a866-eaa42f8ccf6b
-simshow(SwissVAMyKnife.fftshift(SwissVAMyKnife.fft(Array(AS2[1].HW[:, :, 60]))))
 
 # ╔═╡ 43d55490-4f6b-4e3e-a97f-8a4013357406
 begin
@@ -184,8 +169,17 @@ out2 = fwd2(patterns2[:,:, iangle3:iangle3]);
 # ╔═╡ b80bc559-e884-40f1-8283-5079377f6efc
 @bind iz2 PlutoUI.Slider(1:size(out2, 3), show_value=true, default=50)
 
+# ╔═╡ 622a0419-2e9e-4254-8fbb-3c8bd340b00f
+mask = IndexFunArrays.rr2(size(out2[iz2, :, :])) .<= size(out2[iz2, :, :], 1).^2 ./ 4;
+
 # ╔═╡ 7da7b701-3914-4eb3-aec2-3ab7ae0c3d3c
-simshow(Array(out2[iz2, :, :]),  cmap=:turbo)
+p3 = simshow(Array(out2[iz2, :, :]) .* mask,  cmap=:turbo)
+
+# ╔═╡ 3c5a61ea-b299-46a7-87d1-935386473119
+save("/home/felix/Documents/data/wave_optics_simulation_L=$(round(L, digits=6))_N=$(size(target,1))/backprojection_1.png", simshow(Array(out2[iz2, :, :]) .* mask,  cmap=:turbo))
+
+# ╔═╡ 74508e95-735d-4f79-94c6-64662ca06e4e
+simshow(mask)
 
 # ╔═╡ 72fa1dbb-0cc7-4283-85fe-b70fd3864d70
 size(patterns2)
@@ -225,16 +219,11 @@ histogram(Array(abs2.(patterns))[:], yscale=:log10)
 # ╠═a978b980-2279-4118-8085-c714af60cae5
 # ╠═9f58c6c2-57e7-4a3d-92b5-ab25caa9d012
 # ╠═ff9624f4-e6f4-4f8b-9dc3-22ea59127511
-# ╠═d9e9418a-fc4f-4984-a659-1abd53c12dac
 # ╠═82b58277-ea83-471e-a9e3-df340fa0f941
+# ╠═d9e9418a-fc4f-4984-a659-1abd53c12dac
 # ╠═c50e3165-0bc0-4698-83da-a14b533997fd
 # ╠═43a8e1c3-3178-4a20-8448-f7e140a747de
 # ╠═4b93227d-6beb-45f1-b8ad-3f57b86005ae
-# ╠═bd063dc1-9464-4bc0-a264-ed44600a700a
-# ╠═03b8f24d-9636-4d1f-a4f8-ec330c1c4e57
-# ╠═905ac566-93d4-4964-92d6-e3168d8d5b8f
-# ╠═0e25d327-adc3-4f67-a4d0-ce718687b16c
-# ╠═44d92be1-e548-4e98-a866-eaa42f8ccf6b
 # ╠═4ec4f26e-cfbb-4da6-8130-fddf542c4ecd
 # ╠═43d55490-4f6b-4e3e-a97f-8a4013357406
 # ╠═c8665e57-d4f6-448f-9c18-1fb16b317a7b
@@ -243,6 +232,9 @@ histogram(Array(abs2.(patterns))[:], yscale=:log10)
 # ╠═72fa1dbb-0cc7-4283-85fe-b70fd3864d70
 # ╠═b80bc559-e884-40f1-8283-5079377f6efc
 # ╠═7da7b701-3914-4eb3-aec2-3ab7ae0c3d3c
+# ╠═3c5a61ea-b299-46a7-87d1-935386473119
+# ╠═622a0419-2e9e-4254-8fbb-3c8bd340b00f
+# ╠═74508e95-735d-4f79-94c6-64662ca06e4e
 # ╠═7e29a5d9-fa0a-4d74-8e4e-2604dec1a23d
 # ╠═62770a3c-6adb-4ad5-85f1-48be4bab8856
 # ╠═ce406860-dac6-4404-ac85-8970f1bfe9ee
