@@ -1,3 +1,15 @@
+export WaveOptics
+
+@with_kw struct WaveOptics{T2, T, A, ToN} <: PropagationScheme
+    z::T2
+    λ::T
+    L::T
+    μ::ToN
+    angles::A
+end
+
+
+
 """
     fwd_wave(x, AS_abs2, angles)
 

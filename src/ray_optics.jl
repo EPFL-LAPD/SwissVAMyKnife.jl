@@ -1,3 +1,40 @@
+export RayOptics
+
+struct RayOptics{T, A} <: PropagationScheme
+    angles::A
+    μ::T
+end
+
+
+function optimize_patterns(target::AbstractArray{T}, ps::RayOptics, op::GradientBased, loss::Threshold) where T
+    if T == Float64
+        @warn "Target seems to be Float64. For CUDA it is recommended to use Float32 element type"
+    end
+    # create forward model
+    fwd = let angles=ps.angles, μ=ps.μ
+        fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles, μ)
+    end
+    # create loss evaluation and gradient function
+    fg! = make_fg!(fwd, target, loss)
+    
+    # optimize
+    rec0 = radon(target, ps.angles, ps.μ)
+    # very low initialization
+    # 0 fails with optim
+    rec0 .= 0.001
+    res = Optim.optimize(Optim.only_fg!(fg!), rec0, op.optimizer, op.options)
+    
+    # post processing
+    patterns = NNlib.relu(res.minimizer) 
+    printed_intensity = fwd(res.minimizer) 
+    return permutedims(patterns, (3,2,1)), printed_intensity, res
+end
+
+
+function optimize_patterns(target::AbstractArray{T}, ps::RayOptics, op::OSMO) where T
+    iterative_optimization(target, ps.angles, ps.μ; op.thresholds, op.iterations) 
+end
+
 function iter!(buffer, img, θs, μ; clip_sinogram=true)
 	sinogram = radon(img, θs, μ)
 	
@@ -44,5 +81,5 @@ function iterative_optimization(img::AbstractArray{T}, θs, μ=nothing; threshol
 
 	printed = iradon(s, θs, μ)
     printed ./= maximum(printed)
-	return s, printed, losses
+    return permutedims(s, (3,2,1)), printed, losses
 end
