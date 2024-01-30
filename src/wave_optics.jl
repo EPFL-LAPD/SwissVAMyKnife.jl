@@ -9,6 +9,59 @@ export WaveOptics
 end
 
 
+"""
+    optimize_patterns(target, angles, thresholds=(0.7f0, 0.8f0),
+                      method=:radon, μ=nothing,
+                      optimizer=LBFGS(), iterations=30)
+
+
+"""
+function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::Threshold)
+    angles = ps.angles
+    μ = ps.μ
+    L = ps.L
+    λ = ps.λ
+    z = ps.z
+
+
+    patterns_0 = similar(target, (size(target)[1:2]..., size(angles, 1)))
+    x = similar(patterns_0, (size(patterns_0, 1)))
+    x .= fftpos(ps.L, size(x,1), CenterFT)
+    mask = reshape((x.^2 .+ x'.^2) .<= ps.L^2, (1, size(x,1), size(x,1)))
+
+
+
+    AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=false)
+    AS_abs2 = let target=target, AS=AS, langles=length(angles)
+            function AS_abs2(x)
+                abs2.(AS(NNlib.relu.(x) .+ 0im)[1]) ./ langles
+            end
+    end
+    
+    fwd2 = let AS_abs2=AS_abs2, angles=angles
+        function fwd2(x)
+            fwd_wave(x, AS_abs2, angles)
+        end
+    end
+    
+    target_permuted = permutedims(target, (3, 2, 1))
+    fg! = make_fg!(fwd2, target_permuted, loss)
+    
+    # initialize with almost 0
+    patterns_0 .= 0.001f0
+    
+    res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, op.optimizer, op.options)
+   
+
+    printed = fwd2(res.minimizer)
+    patterns = NNlib.relu.(res.minimizer)
+    printed_perm = permutedims(printed, (3, 2, 1));
+    patterns_perm = permutedims(patterns, (1, 3, 2));
+    return patterns_perm, printed_perm, res
+end
+
+
+
 
 """
     fwd_wave(x, AS_abs2, angles)

@@ -65,27 +65,27 @@ It is important to stick with Float32 datatypes for CUDA acceleration
 n_resin = 1.5f0
 
 # ╔═╡ 6c8b875e-19bd-4a66-9090-d356090f34df
-angles = range(0, 1f0*π, 200)[1:end-1]
+angles = range(0, 1f0*π, 100)[1:end-1]
 
 # ╔═╡ 22fb0a2b-bf29-405a-bf08-a2c118de4276
-L = 50f-6
+L = 100f-6
 
 # ╔═╡ afffcc37-b215-4c11-a51e-9435c79338c2
-wo = WaveOptics(
+waveoptics = WaveOptics(
 	z=togoc(range(-L/2, L/2, size(target,1))), 
 	L=L, 
 	λ=405f-9 / n_resin, 
 	μ=nothing, 
-	angles=angles
-)
+	angles=angles)
 
 # ╔═╡ b678d10d-ef6d-485e-b752-925f396d8e65
-o = GradientBased(optimizer=Optim.LBFGS(),
-			thresholds=(0.7f0, 0.8f0),
-			iterations=20, loss=:object_space)
+optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=30, store_trace=true))
+
+# ╔═╡ a77abf06-4c40-4053-9702-57c1da461417
+loss = Threshold(thresholds=(0.7f0, 0.8f0))
 
 # ╔═╡ a90c142a-bd1f-47aa-bbac-c12aee4ffbf9
-@mytime patterns, printed, res = optimize_patterns(target, wo, o)
+@mytime patterns, printed, res = optimize_patterns(target, waveoptics, optimizer, loss)
 
 # ╔═╡ f6e561ca-9aaf-4178-8fdd-9f7ab706badf
 res
@@ -129,6 +129,9 @@ begin
 	λ=405f-9 / n_resin
 end
 
+# ╔═╡ 4b93227d-6beb-45f1-b8ad-3f57b86005ae
+CuArray([1,2,3f0]) .* 2.0
+
 # ╔═╡ 4ec4f26e-cfbb-4da6-8130-fddf542c4ecd
 
 
@@ -145,7 +148,13 @@ patterns2 = CuArray(PermutedDimsArray(patterns, (1,3,2)));
 AS2 = AngularSpectrum(patterns2[:, :, 1] .+ 0im, z, λ, L, padding=false)
 
 # ╔═╡ 03b8f24d-9636-4d1f-a4f8-ec330c1c4e57
-simshow(Array(AS2[1].HW[:, :, 60]))
+simshow(Array(AS2[1].HW[:, :, end]))
+
+# ╔═╡ 905ac566-93d4-4964-92d6-e3168d8d5b8f
+simshow((Array(AS2[1].HW[:, :, 1])))
+
+# ╔═╡ 0e25d327-adc3-4f67-a4d0-ce718687b16c
+findmax(abs.(Array(AS2[1].HW[:, :, 1])))
 
 # ╔═╡ 44d92be1-e548-4e98-a866-eaa42f8ccf6b
 simshow(SwissVAMyKnife.fftshift(SwissVAMyKnife.fft(Array(AS2[1].HW[:, :, 60]))))
@@ -166,14 +175,20 @@ begin
 	 end 
 end
 
+# ╔═╡ 43f2e173-bb96-461d-b8ce-e4539f9e14d1
+size(patterns2)
+
 # ╔═╡ ce5e7dda-2a3a-4828-bf46-8585a4f83936
-out2 = fwd2(patterns2);
+out2 = fwd2(patterns2[:,:, iangle3:iangle3]);
 
 # ╔═╡ b80bc559-e884-40f1-8283-5079377f6efc
 @bind iz2 PlutoUI.Slider(1:size(out2, 3), show_value=true, default=50)
 
 # ╔═╡ 7da7b701-3914-4eb3-aec2-3ab7ae0c3d3c
 simshow(Array(out2[iz2, :, :]),  cmap=:turbo)
+
+# ╔═╡ 72fa1dbb-0cc7-4283-85fe-b70fd3864d70
+size(patterns2)
 
 # ╔═╡ 62770a3c-6adb-4ad5-85f1-48be4bab8856
 simshow(Array(radon(target, angles)[:, angle, :])', cmap=:jet)
@@ -192,12 +207,13 @@ histogram(Array(abs2.(patterns))[:], yscale=:log10)
 # ╠═03e90156-d112-4a79-b758-b91e99261973
 # ╠═3e8e3d96-2f08-48b6-8bce-632bfff3267c
 # ╠═0fc3a1f1-98b5-46ce-9adf-e31240876f4f
-# ╟─043edfd9-734b-4f50-9998-5f64b63dd209
+# ╠═043edfd9-734b-4f50-9998-5f64b63dd209
 # ╠═bc212128-dde3-4835-a36d-00d2630a1ec4
 # ╠═6c8b875e-19bd-4a66-9090-d356090f34df
 # ╠═22fb0a2b-bf29-405a-bf08-a2c118de4276
 # ╠═afffcc37-b215-4c11-a51e-9435c79338c2
 # ╠═b678d10d-ef6d-485e-b752-925f396d8e65
+# ╠═a77abf06-4c40-4053-9702-57c1da461417
 # ╠═a90c142a-bd1f-47aa-bbac-c12aee4ffbf9
 # ╠═f6e561ca-9aaf-4178-8fdd-9f7ab706badf
 # ╠═e1aad0ac-55e3-4bb8-91b6-e8f90033a45d
@@ -213,13 +229,18 @@ histogram(Array(abs2.(patterns))[:], yscale=:log10)
 # ╠═82b58277-ea83-471e-a9e3-df340fa0f941
 # ╠═c50e3165-0bc0-4698-83da-a14b533997fd
 # ╠═43a8e1c3-3178-4a20-8448-f7e140a747de
+# ╠═4b93227d-6beb-45f1-b8ad-3f57b86005ae
 # ╠═bd063dc1-9464-4bc0-a264-ed44600a700a
 # ╠═03b8f24d-9636-4d1f-a4f8-ec330c1c4e57
+# ╠═905ac566-93d4-4964-92d6-e3168d8d5b8f
+# ╠═0e25d327-adc3-4f67-a4d0-ce718687b16c
 # ╠═44d92be1-e548-4e98-a866-eaa42f8ccf6b
 # ╠═4ec4f26e-cfbb-4da6-8130-fddf542c4ecd
 # ╠═43d55490-4f6b-4e3e-a97f-8a4013357406
 # ╠═c8665e57-d4f6-448f-9c18-1fb16b317a7b
+# ╠═43f2e173-bb96-461d-b8ce-e4539f9e14d1
 # ╠═ce5e7dda-2a3a-4828-bf46-8585a4f83936
+# ╠═72fa1dbb-0cc7-4283-85fe-b70fd3864d70
 # ╠═b80bc559-e884-40f1-8283-5079377f6efc
 # ╠═7da7b701-3914-4eb3-aec2-3ab7ae0c3d3c
 # ╠═7e29a5d9-fa0a-4d74-8e4e-2604dec1a23d

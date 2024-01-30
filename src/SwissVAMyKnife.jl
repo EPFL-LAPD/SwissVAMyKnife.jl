@@ -26,8 +26,8 @@ abstract type OptimizationScheme end
 
 include("utils.jl")
 include("loss.jl")
-include("wave_optics.jl")
 include("optimization.jl")
+include("wave_optics.jl")
 include("ray_optics.jl")
 
 
