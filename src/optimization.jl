@@ -2,7 +2,15 @@ export optimize_patterns
 
 export OSMO, GradientBased
 
+"""
+    OSMO(; iterations=10, thresholds=(0.7f0, 0.8f0))
+   
+Define parameters for the OSMO optimization algorithm.
 
+# Reference
+Rackson, Charles M., et al. *Object-space optimization of tomographic reconstructions for additive manufacturing.* Additive Manufacturing 48 (2021): 102367.
+
+"""
 struct OSMO{T} <: OptimizationScheme
     iterations::Integer
     thresholds::Tuple{T, T}
@@ -12,7 +20,13 @@ struct OSMO{T} <: OptimizationScheme
     end
 end
 
+"""
+    GradientBased(; optimizer=LBFSG(), options=Optim.options(iterations=30, store_trace=true))
 
+
+Define type for the gradient descent based optimization scheme.
+Based on Optim.jl.
+"""
 struct GradientBased{O, I} <: OptimizationScheme
     optimizer::O
     options::I
@@ -27,6 +41,10 @@ end
 
 
 """
+    make_fg!(fwd, target, loss)
+
+Define an efficient function `fg!` for the interface of Optim.jl
+Internal method, do not use.
 """
 function make_fg!(fwd, target, loss)
     mask = similar(target, Bool, (size(target, 1), size(target, 2)))
