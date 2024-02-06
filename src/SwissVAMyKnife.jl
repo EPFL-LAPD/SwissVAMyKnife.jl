@@ -20,7 +20,25 @@ using FourierTools
 
 export PropagationScheme, OptimizationScheme
 
+"""
+    abstract type PropagationScheme end
+
+List of possible schemes:
+* [`ParallelRayOptics`](@ref)
+* [`WaveOptics`](@ref)
+"""
 abstract type PropagationScheme end
+
+"""
+    abstract type OptimizationScheme end
+
+List of possible schemes:
+## [`GradientBased`](@ref)
+Supported for all `<:PropagationScheme`.
+
+## [`OSMO`](@ref)
+Supported only for `ParallelRayOptics`
+"""
 abstract type OptimizationScheme end
 
 

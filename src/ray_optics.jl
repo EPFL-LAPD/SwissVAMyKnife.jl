@@ -1,14 +1,39 @@
-export RayOptics
+export ParallelRayOptics
 
-struct RayOptics{T, A} <: PropagationScheme
+"""
+    ParallelRayOptics(angles, μ)
+
+Type to represent the parallel ray optical approach.
+This is equivalent to an inverse Radon transform as the forward model to the printer.
+
+
+`angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
+`μ` is the absorption coefficient of the resin in units of pixels.
+So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
+
+"""
+struct ParallelRayOptics{T, A} <: PropagationScheme
     angles::A
     μ::T
 end
 
+"""
+    optimize_patterns(target, ps::PropagationScheme, op::GradientBased, loss::LossTarget)
 
-function optimize_patterns(target::AbstractArray{T}, ps::RayOptics, op::GradientBased, loss::Threshold) where T
-    if T == Float64
-        @warn "Target seems to be Float64. For CUDA it is recommended to use Float32 element type"
+Abstract method to optimize a `target` volume.
+
+See [`PropagationScheme`](@ref) for the options for the different propagation schemes.
+See [`OptimizationScheme`](@ref) for the options for the different optimization schemes.
+See [`LossTarget`](@ref) for the options for the different loss functions.
+
+"""
+optimize_patterns
+
+
+
+function optimize_patterns(target::AbstractArray{T}, ps::ParallelRayOptics, op::GradientBased, loss::LossThreshold) where T
+    if T == Float64 && target isa CuArray
+        @warn "Target seems to be Float64. For CUDA it is recommended to use a Float32 element type"
     end
     # create forward model
     fwd = let angles=ps.angles, μ=ps.μ
@@ -31,10 +56,23 @@ function optimize_patterns(target::AbstractArray{T}, ps::RayOptics, op::Gradient
 end
 
 
-function optimize_patterns(target::AbstractArray{T}, ps::RayOptics, op::OSMO) where T
+"""
+    optimize_patterns(target::AbstractArray{T}, ps::ParallelRayOptics, op::OSMO) where T
+
+Optimize patterns with the `OSMO` optimization algorithm.
+This is only supported for `ParallelRayOptics`.
+"""
+function optimize_patterns(target::AbstractArray{T}, ps::ParallelRayOptics, op::OSMO) where T
+    if T == Float64 && target isa CuArray
+        @warn "Target seems to be Float64. For CUDA it is recommended to use a Float32 element type"
+    end
     iterative_optimization(target, ps.angles, ps.μ; op.thresholds, op.iterations) 
 end
 
+"""
+    
+iterate one step in the OSMO algorithm, allocation free.
+"""
 function iter!(buffer, img, θs, μ; clip_sinogram=true)
 	sinogram = radon(img, θs, μ)
 	
@@ -51,6 +89,11 @@ function iter!(buffer, img, θs, μ; clip_sinogram=true)
 end
 
 
+"""
+
+iterative optimization with the `OSMO` algorithm. 
+Don't use this function, use `optimize_patterns`.
+"""
 function iterative_optimization(img::AbstractArray{T}, θs, μ=nothing; thresholds=(0.65, 0.75), iterations = 2) where T
 	N = size(img, 1)
 	fx = (-N / 2):1:(N /2 -1)

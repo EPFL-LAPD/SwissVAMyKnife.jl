@@ -1,10 +1,20 @@
 export WaveOptics, WaveOpticsPhase
 
+"""
+   WaveOptics(;z, λ, L, μ=nothing, angles)
+
+# Parameters
+* `z`: the different depths we propagate the field. Should be `Vector` or range.
+* `λ`: wavelength in the medium. So divide by the refractive index!
+* `L`: The side length of the array. You should satisfy `L ≈ abs(z[begin]) + abs(z[end])`
+* `μ`: Absorption coefficient.
+* `angles`: the angles we illumate from. 
+"""
 @with_kw struct WaveOptics{T2, T, A, ToN} <: PropagationScheme
     z::T2
     λ::T
     L::T
-    μ::ToN
+    μ::ToN=nothing
     angles::A
 end
 
@@ -12,21 +22,27 @@ end
     z::T2
     λ::T
     L::T
-    μ::ToN
+    μ::ToN=nothing
     angles::A
 end
 
+
 """
 
 
 """
-function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::Threshold)
+function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::LossThreshold)
     angles = ps.angles
     μ = ps.μ
     L = ps.L
     λ = ps.λ
-    z = ps.z
 
+    z = similar(target, (size(ps.z),))
+    z .= typeof(z)(ps.z)
+
+    if !isnothing(μ)
+        raise(ArgumentError("μ in the wave optical model is not supported yet"))
+    end
 
     patterns_0 = similar(target, (size(target)[1:2]..., size(angles, 1)))
     x = similar(patterns_0, (size(patterns_0, 1)))
@@ -65,7 +81,7 @@ function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::Thre
 end
 
 
-function optimize_patterns(target, ps::WaveOpticsPhase, op::GradientBased, loss::Threshold)
+function optimize_patterns(target, ps::WaveOpticsPhase, op::GradientBased, loss::LossThreshold)
     angles = ps.angles
     μ = ps.μ
     L = ps.L
@@ -82,7 +98,7 @@ function optimize_patterns(target, ps::WaveOpticsPhase, op::GradientBased, loss:
     AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=true)
     AS_abs2 = let target=target, AS=AS, langles=length(angles), p=plan_fft(0im .+ similar(patterns_0[:,:, 1]), (1,2))
             function a(x)
-                abs2.(AS(fftshift(p * exp.(1im .* x)))[1]) ./ 20_000 ./ langles
+                abs2.(AS(fftshift(p * exp.(1im .* x)))[1]) ./ 60_000 ./ langles
             end
     end
 
@@ -100,7 +116,6 @@ function optimize_patterns(target, ps::WaveOpticsPhase, op::GradientBased, loss:
     # initialize with almost 0
     @warn "initialize with random phases"
     patterns_0 .= 2π .* typeof(patterns_0)(rand(size(patterns_0)...))#0.00f0
-    
     res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, op.optimizer, op.options)
 
     printed = fwd2(res.minimizer)
