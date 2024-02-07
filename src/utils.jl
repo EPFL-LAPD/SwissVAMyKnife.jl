@@ -1,4 +1,4 @@
-export printing_errors, plot_histogram, save_patterns
+export printing_errors, plot_intensity_histogram, save_patterns
 
 """
     printing_errors(target, printed, thresholds)
@@ -26,10 +26,17 @@ end
 
 
 
+"""
+    plot_intensity_histogram(target, object_printed, thresholds)
 
-function plot_histogram(target, object_printed, thresholds; yscale=:log10)
+Plot an intensity histogram of the `printed_object`.
+`target` is the original binary target object.
+`thresholds` should indicate the threshold values for polymerization.
+"""
+function plot_intensity_histogram(target, object_printed, thresholds; yscale=:log10)
     # :stephist vs :barhist
-    
+    target = Array(target)
+    object_printed = Array(object_printed)
     plot_font = "Computer Modern"
     default(fontfamily=plot_font,
 	    linewidth=2, framestyle=:box, label=nothing, grid=false)

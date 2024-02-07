@@ -58,6 +58,7 @@ end
    
 """
 @inline function (l::LossThreshold)(x::AbstractArray{T}, isobject, notobject) where T
+    # see https://github.com/FluxML/Zygote.jl/issues/1498
     #return (sum(x -> l.sum_f(NNlib.relu(l.thresholds[2] - x)),  view(x, isobject)) +
     #        sum(x -> l.sum_f(NNlib.relu(x - 1)              ),  view(x, isobject)) +
     #        sum(x -> l.sum_f(NNlib.relu(x - l.thresholds[1])),  view(x, notobject)))

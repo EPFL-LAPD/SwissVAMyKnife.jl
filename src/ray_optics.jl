@@ -1,4 +1,4 @@
-export ParallelRayOptics
+export ParallelRayOptics, VialRayOptics
 
 """
     ParallelRayOptics(angles, μ)
@@ -7,8 +7,8 @@ Type to represent the parallel ray optical approach.
 This is equivalent to an inverse Radon transform as the forward model to the printer.
 
 
-`angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
-`μ` is the absorption coefficient of the resin in units of pixels.
+- `angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
+- `μ` is the absorption coefficient of the resin in units of pixels.
 So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
 
 """
@@ -18,32 +18,73 @@ struct ParallelRayOptics{T, A} <: PropagationScheme
 end
 
 """
-    optimize_patterns(target, ps::PropagationScheme, op::GradientBased, loss::LossTarget)
+
+Type to represent a ray optical approach where refraction of the glass vial
+is taken into account.
+
+- `angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
+- `μ` is the absorption coefficient of the resin in units of pixels.
+- So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
+- `R_outer` is the outer radius of the glass vial.
+- `R_inner` is the inner radius of the glass vial.
+- `n_vial` is the refractive index of the glass vial.
+- `n_resin` is the refractive index of the resin.
+"""
+@with_kw struct VialRayOptics{T, A} <: PropagationScheme
+    angles::A
+    μ::T=nothing
+    R_outer::T=8e-3
+    R_inner::T=7.6e-3
+    n_vial::T
+    n_resin::T
+end
+
+
+
+"""
+    optimize_patterns(target, ps::VialRayOptics, op::GradientBased, loss::LossTarget)
 
 Abstract method to optimize a `target` volume.
+
+See [`VialRayOptics`](@ref) how to specify the geometry of the vial.
 
 See [`PropagationScheme`](@ref) for the options for the different propagation schemes.
 See [`OptimizationScheme`](@ref) for the options for the different optimization schemes.
 See [`LossTarget`](@ref) for the options for the different loss functions.
 
 """
-optimize_patterns
-
-
-
-function optimize_patterns(target::AbstractArray{T}, ps::ParallelRayOptics, op::GradientBased, loss::LossThreshold) where T
+function optimize_patterns(target::AbstractArray{T}, ps::VialRayOptics, op::GradientBased, loss::LossThreshold) where T
     if T == Float64 && target isa CuArray
         @warn "Target seems to be Float64. For CUDA it is recommended to use a Float32 element type"
     end
+
+    @warn "Fresnel reflection on the glass vial is not included yet"
+    N = iseven(size(target, 1)) ? T(size(target, 1) - 1) : T(size(target, 1))
+    in_height = range(-N÷2, N÷2, Int(N))
+    radius_pixel = T(N ÷ 2)
+    # find the intersection with the glass vials
+    # return both the entrance intersection and exit intersection
+    heights = distort_rays_vial.(in_height,
+	                radius_pixel,
+                    radius_pixel / T(ps.R_outer * ps.R_inner),
+                    T(ps.n_vial),
+                    T(ps.n_resin))
+
+    # unzip
+    in_height = map(x -> x[1], heights)
+    out_height = map(x -> x[2], heights)
+    # RadonKA.jl
+    geometry = RadonFlexibleCircle(size(target, 1), in_height, out_height)
+
     # create forward model
     fwd = let angles=ps.angles, μ=ps.μ
-        fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles, μ)
+        fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles; μ, geometry)
     end
     # create loss evaluation and gradient function
     fg! = make_fg!(fwd, target, loss)
     
     # optimize
-    rec0 = radon(target, ps.angles, ps.μ)
+    rec0 = radon(target, ps.angles; μ=ps.μ, geometry)
     # very low initialization
     # 0 fails with optim
     rec0 .= 0.001
@@ -52,7 +93,34 @@ function optimize_patterns(target::AbstractArray{T}, ps::ParallelRayOptics, op::
     # post processing
     patterns = NNlib.relu(res.minimizer) 
     printed_intensity = fwd(res.minimizer) 
-    return permutedims(patterns, (3,2,1)), printed_intensity, res
+    return patterns, printed_intensity, res
+
+end
+
+
+function optimize_patterns(target::AbstractArray{T}, ps::ParallelRayOptics, op::GradientBased, loss::LossThreshold) where T
+    if T == Float64 && target isa CuArray
+        @warn "Target seems to be Float64. For CUDA it is recommended to use a Float32 element type"
+    end
+    # create forward model
+    fwd = let angles=ps.angles, μ=ps.μ
+        fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles; μ)
+    end
+    # create loss evaluation and gradient function
+    fg! = make_fg!(fwd, target, loss)
+    
+    # optimize
+    rec0 = radon(target, ps.angles; μ=ps.μ)
+    # very low initialization
+    # 0 fails with optim
+    rec0 .= 0.001
+    res = Optim.optimize(Optim.only_fg!(fg!), rec0, op.optimizer, op.options)
+    
+    # post processing
+    patterns = NNlib.relu(res.minimizer) 
+    printed_intensity = fwd(res.minimizer) 
+    return patterns, printed_intensity, res
+    # return permutedims(patterns, (3,2,1)), printed_intensity, res
 end
 
 
@@ -125,4 +193,38 @@ function iterative_optimization(img::AbstractArray{T}, θs, μ=nothing; threshol
 	printed = iradon(s, θs, μ)
     printed ./= maximum(printed)
     return permutedims(s, (3,2,1)), printed, losses
+end
+
+
+
+function distort_rays_vial(y::T, Rₒ::T, Rᵢ::T, nvial::T, nresin::T) where T
+	y, Rₒ, Rᵢ, nvial, nresin = 	Float64.((y, Rₒ, Rᵢ, nvial, nresin))
+
+	if iszero(y)
+		return zero(T), zero(T)
+	end
+
+	α = asin(y / Rₒ)
+	β = asin(sin(α) / nvial)
+
+	x = Rₒ * cos(β) - sqrt(Rₒ^2*(cos(β)^2 - 1) + Rᵢ^2) 
+
+	ϵ = acos((-Rₒ^2 + x^2 + Rᵢ^2) / 2 / Rᵢ / x) - Float64(π) / 2
+
+	β_ = sign(y) * (Float64(π) / 2 - ϵ)
+	γ = asin(nvial * sin(β_) / nresin)
+	
+	δ₁ = α - β
+	δ₂ = β_ - γ
+	δ_ges = δ₁ + δ₂
+
+	y_ = abs(Rᵢ * sin(γ))
+	p = sqrt(Rₒ^2 - y_^2)
+
+	η = - (asin(p / Rₒ) - sign(y) * (Float64(π)/2 - δ_ges))
+	yf = Rₒ * sin(η)
+	
+	yi = 2 * p * sin(δ_ges) + yf
+	
+	return T(yi), T(yf)
 end

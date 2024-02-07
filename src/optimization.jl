@@ -31,7 +31,7 @@ struct GradientBased{O, I} <: OptimizationScheme
     optimizer::O
     options::I
     
-    function GradientBased(; optimizer=LBFSG(), options=Optim.options(iterations=30, store_trace=true))
+    function GradientBased(; optimizer=LBFGS(), options=Optim.Options(iterations=30, store_trace=true))
         return new{typeof(optimizer), typeof(options)}(optimizer, options)
     end
 end
