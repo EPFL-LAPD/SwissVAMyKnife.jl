@@ -66,6 +66,9 @@ However, we add a trailing 1 z dimension.
 # ╔═╡ 4475e0c5-4ae6-403f-bb2b-c5bc8a25d18a
 sz = (256, 256, 1)
 
+# ╔═╡ cec09ba8-5707-495f-b4ac-94f346c33ce5
+
+
 # ╔═╡ b2dae3ea-5a40-498f-a134-5a9a98e58de0
 target = box(Float32, sz, (150, 110, 1)) .-  box(Float32, sz, (80, 50, 1));
 
@@ -105,7 +108,10 @@ angles = range(0, 2π, 400)
 μ = nothing
 
 # ╔═╡ 6d130809-8b78-485c-bba1-fc958bc9d873
+# ╠═╡ disabled = true
+#=╠═╡
 geometry = ParallelRayOptics(angles, μ)
+  ╠═╡ =#
 
 # ╔═╡ cb8b9ccc-4085-4abe-bd71-5e70cc8decfa
 md" As optimizer we use a gradient descent based variant"
@@ -118,10 +124,14 @@ md"
 Let's try to run the optimization: `togoc` moves the target onto the CUDA device, if possible"
 
 # ╔═╡ 07e97af6-f30b-4100-999c-c61b52cec76e
+#=╠═╡
 @mytime patterns, printed_intensity, optim_res = optimize_patterns(togoc(target), geometry, optimizer, loss)
+  ╠═╡ =#
 
 # ╔═╡ c13abe2d-ff27-42e2-9534-cb1936e68236
+#=╠═╡
 optim_res
+  ╠═╡ =#
 
 # ╔═╡ 9887da10-96fa-4509-9b91-a6c21354f4ba
 md"# 3. Look at the results"
@@ -134,7 +144,9 @@ Object pixels stay well above it
 "
 
 # ╔═╡ 66560fd0-3cee-41ca-bb13-dee2a78bbb9b
+#=╠═╡
 plot_intensity_histogram(target, printed_intensity, (0.65, 0.75))
+  ╠═╡ =#
 
 # ╔═╡ dc538ea6-54e3-4a0f-a5ef-427802239cf2
 md"threshold value $(@bind thresh PlutoUI.Slider(0:0.01:1, show_value=true, default=0.5))"
@@ -146,10 +158,14 @@ Printed intensity ----------------------------- Printed intensity after threshol
 "
 
 # ╔═╡ 5801f61a-79fa-4326-82dd-3901dd4d493a
+#=╠═╡
 [simshow(Array(printed_intensity[:, :, 1])) simshow(ones((sz[1], 5))) simshow(thresh .< Array(printed_intensity[:, :, 1])) simshow(ones((sz[1], 5))) simshow(target[:, :, 1])]
+  ╠═╡ =#
 
 # ╔═╡ 92f5b987-13c7-463c-b150-71c51ec4aa72
+#=╠═╡
 simshow(Array(patterns)[:, :, 1])
+  ╠═╡ =#
 
 # ╔═╡ 11af6da4-5fa2-4e48-a1c8-32bc686b8239
 md"# 4. Include Absorption of the Photo initiator
@@ -183,10 +199,12 @@ plot_intensity_histogram(target, printed_intensity_μ, (0.65, 0.75))
 [simshow(Array(printed_intensity_μ[:, :, 1])) simshow(ones((sz[1], 5))) simshow(thresh2 .< Array(printed_intensity_μ[:, :, 1])) simshow(ones((sz[1], 5))) simshow(target[:, :, 1])]
 
 # ╔═╡ 17621d91-1f93-4fcf-abf1-5e97463a0bdf
-simshow(Array(patterns_μ[:,:,1]))
+simshow(Array(patterns_μ[:,:,1]), cmap=:gray)
 
 # ╔═╡ 05c6a38e-a87d-46da-acb6-33b393369f4c
-sum(patterns_μ) / (maximum(patterns) * length(patterns))
+#=╠═╡
+sum(patterns_μ) / (maximum(patterns_μ) * length(patterns))
+  ╠═╡ =#
 
 # ╔═╡ f940c2a6-ebc2-4dca-986c-fe25bfa9e4f0
 md"""# 5. Include refraction of the glass vial 
@@ -220,7 +238,7 @@ geometry_vial = VialRayOptics(
 
 # ╔═╡ 675764cb-721a-4b89-92c4-8a1ab7f5867f
 @mytime patterns_vial, printed_intensity_vial, optim_res_vial = optimize_patterns(togoc(target), geometry_vial, 
-								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=15, store_trace=true))					
+								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=8, store_trace=true))					
 								, loss)
 
 # ╔═╡ 9ddd098d-2d78-4de8-a322-40a2463adcda
@@ -244,6 +262,9 @@ However, this is not exactly if absorption takes place.
 
 # ╔═╡ fc239b37-dc88-48cd-9479-99074d96ece5
 simshow(Array(patterns_vial[:,:,1]), cmap=:turbo)
+
+# ╔═╡ 7de5d398-20d6-44e2-b2eb-3007111e146f
+sum(patterns_vial) / (maximum(patterns_vial) * length(patterns_vial))
 
 # ╔═╡ a7cafba6-849a-4eb8-9709-a76cb98e9879
 md"# 6. Let's do a bigger 3D object!
@@ -284,7 +305,7 @@ optim_res_3D
 md"z slider value $(@bind slice2 PlutoUI.Slider(axes(target_3D, 3), show_value=true, default=0.5))"
 
 # ╔═╡ 0835d1b0-a562-4edf-939e-3044f94e53c7
-[simshow(Array(printed_intensity_3D[:, :, slice2])) simshow(ones((size(target_3D, 1), 5))) simshow(thresh4 .< Array(printed_intensity_3D[:, :, slice2])) simshow(ones((size(target_3D, 1), 5))) simshow(target_3D[:, :, slice2])]
+[simshow(Array(printed_intensity_3D[:, :, slice2]), set_one=false) simshow(ones((size(target_3D, 1), 5))) simshow(thresh4 .< Array(printed_intensity_3D[:, :, slice2])) simshow(ones((size(target_3D, 1), 5))) simshow(target_3D[:, :, slice2])]
 
 # ╔═╡ 83793ffe-38de-4a76-b80f-8dee1d18c5a5
 plot_intensity_histogram(target_3D, printed_intensity_3D, (0.65, 0.75))
@@ -293,7 +314,34 @@ plot_intensity_histogram(target_3D, printed_intensity_3D, (0.65, 0.75))
 md"angle $(@bind angle PlutoUI.Slider(axes(patterns_3D, 2), show_value=true, default=0.5))"
 
 # ╔═╡ c8774a2b-47e0-4be6-b213-bdef6d7b0726
-simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo)
+simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo, set_one=true)
+
+# ╔═╡ 497cd20f-5544-43dc-8037-1263afb5cf46
+
+
+# ╔═╡ 3d4e99a1-ebf3-4b51-a3d9-8ada7fb3267c
+sz2 = (32, 32, 2)
+
+# ╔═╡ b99cbb89-6dd3-4832-ac66-d24fbc3fc060
+target2 = box(Float32, sz2, (17, 17, 1)) .-  box(Float32, sz2, (9, 9, 1));
+
+# ╔═╡ 3fadfd32-5552-43ea-9bcb-725a1a78a00d
+simshow(target2[:,:,1])
+
+# ╔═╡ 6b413ee2-be9f-499f-8a79-472fe205fc3f
+loss2 = LossThreshold(thresholds=(0.65, 0.75))
+
+# ╔═╡ f50ade1d-37f1-4f03-a081-e74642798124
+angles2 = range(0, 2π, 64)
+
+# ╔═╡ 510bd5b1-f91f-4f7b-8a84-f8eebacb9aff
+optimizer2 = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=10, store_trace=true))
+
+# ╔═╡ fa639ca1-cf25-41d0-9a29-8c325d808ba4
+geometry2 = ParallelRayOptics(angles2, nothing)
+
+# ╔═╡ 47f86ac2-a688-40c3-a4c3-fd750b698c27
+target == (0.7 .< optimize_patterns((target), geometry2, optimizer2, loss2)[2])
 
 # ╔═╡ Cell order:
 # ╟─9c478480-163a-4fe0-ad6b-32a337a616b9
@@ -308,6 +356,7 @@ simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo)
 # ╠═9d1ffd4d-1fe3-4f5c-bdc3-817fd0f23c7b
 # ╟─465e830f-ca33-427a-ad7b-e18f3bbaa3c4
 # ╠═4475e0c5-4ae6-403f-bb2b-c5bc8a25d18a
+# ╠═cec09ba8-5707-495f-b4ac-94f346c33ce5
 # ╠═b2dae3ea-5a40-498f-a134-5a9a98e58de0
 # ╠═047023bf-96dd-4427-aa13-3fb2340af90e
 # ╟─1d2bdd44-95d2-45ef-8e24-c8ca3df7485a
@@ -346,6 +395,7 @@ simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo)
 # ╠═b6a6237f-b03f-402d-9693-f00044e3539e
 # ╟─eda29eed-507c-4f55-b1e6-590c9616db8e
 # ╠═fc239b37-dc88-48cd-9479-99074d96ece5
+# ╠═7de5d398-20d6-44e2-b2eb-3007111e146f
 # ╟─a7cafba6-849a-4eb8-9709-a76cb98e9879
 # ╠═0a655d51-e3b6-413b-83de-9781974242a2
 # ╟─877b1484-969c-45d7-a3e7-4f0301a81a4b
@@ -359,3 +409,12 @@ simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo)
 # ╠═83793ffe-38de-4a76-b80f-8dee1d18c5a5
 # ╟─262b96e8-a78c-441c-9b46-2d87636286d7
 # ╠═c8774a2b-47e0-4be6-b213-bdef6d7b0726
+# ╠═497cd20f-5544-43dc-8037-1263afb5cf46
+# ╠═3d4e99a1-ebf3-4b51-a3d9-8ada7fb3267c
+# ╠═b99cbb89-6dd3-4832-ac66-d24fbc3fc060
+# ╠═3fadfd32-5552-43ea-9bcb-725a1a78a00d
+# ╠═6b413ee2-be9f-499f-8a79-472fe205fc3f
+# ╠═f50ade1d-37f1-4f03-a081-e74642798124
+# ╠═510bd5b1-f91f-4f7b-8a84-f8eebacb9aff
+# ╠═fa639ca1-cf25-41d0-9a29-8c325d808ba4
+# ╠═47f86ac2-a688-40c3-a4c3-fd750b698c27
