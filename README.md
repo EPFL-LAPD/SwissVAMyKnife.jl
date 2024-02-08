@@ -20,20 +20,20 @@ julia> ]add github.com/EPFL-LAPD/SwissVAMyKnife.jl
 
 # Features
 
-* [x] several optimizers (such as Conjugate Gradient or L-BFGS provided by [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl))
+* [x] several optimizers (such as L-BFGS provided by [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl))
 * [x] based on automatic differentiation
 * [x] CUDA acceleration
 * [x] 3D parallel inverse (exponential) Radon for ray optical simulation 
 * [x] 3D coherent wave optical optimization (see this paper for details and limitations). Note this has been only theoretical demonstrated and experimentally not validated.
 * [x] absorption can be included
-* [x] reinterpolation helpers to include index-matching-bath-free systems (only valid for ray optics) -> allows for refracting of glass vials
+* [x] refraction of glass vial is included
 
 
 # Examples
 
 
 # Other packages
-There is the Python based [VAM Toolbox](https://github.com/computed-axial-lithography/VAMToolbox) and [LDCD-VAM](https://github.com/facebookresearch/LDCT-VAM/). In terms of functionality, they also offer a ray based method including absorption. The performance is a factor of X worse for reasonable volumes.
+There is the Python based [VAM Toolbox](https://github.com/computed-axial-lithography/VAMToolbox) and [LDCD-VAM](https://github.com/facebookresearch/LDCT-VAM/). In terms of functionality, they also offer a ray based method including absorption.
 Wave optical methods are not offered.
 
 # Development
