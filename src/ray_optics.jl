@@ -1,4 +1,20 @@
 export ParallelRayOptics, VialRayOptics
+export PolarizationParallel, PolarizationPerpendicular, PolarizationRandom
+
+
+"""
+    Polarization
+
+- `PolarizationParallel` is the parallel polarization. 
+- `PolarizationPerpendicular` is the perpendicular polarization.
+- `PolarizationRandom` is the random polarization.
+"""
+abstract type Polarization end
+
+struct PolarizationParallel <: Polarization end
+struct PolarizationPerpendicular <: Polarization end
+struct PolarizationRandom <: Polarization end
+
 
 """
     ParallelRayOptics(angles, μ)
@@ -29,39 +45,73 @@ is taken into account.
 - `R_inner` is the inner radius of the glass vial.
 - `n_vial` is the refractive index of the glass vial.
 - `n_resin` is the refractive index of the resin.
+- `polarization` is the polarization of the light.  
 """
-@with_kw struct VialRayOptics{T, A} <: PropagationScheme
+@with_kw struct VialRayOptics{T, A, P} <: PropagationScheme
     angles::A
     μ::T=nothing
     R_outer::T=8e-3
     R_inner::T=7.6e-3
     n_vial::T
     n_resin::T
+    polarization::P=PolarizationRandom()
 end
 
 
 
 """
-    optimize_patterns(target, ps::VialRayOptics, op::GradientBased, loss::LossTarget)
+    optimize_patterns(target, ps::{VialRayOptics, ParallelRayOptics}, op::GradientBased, loss::LossTarget)
 
 Abstract method to optimize a `target` volume.
 
 See [`VialRayOptics`](@ref) how to specify the geometry of the vial.
+See [`ParallelRayOptics`](@ref) how to specify the geometry of the vial.
 
 See [`PropagationScheme`](@ref) for the options for the different propagation schemes.
 See [`OptimizationScheme`](@ref) for the options for the different optimization schemes.
 See [`LossTarget`](@ref) for the options for the different loss functions.
 
 """
-function optimize_patterns(target::AbstractArray{T}, ps::VialRayOptics, op::GradientBased, loss::LossThreshold) where T
+function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, ParallelRayOptics}, op::GradientBased, loss::LossThreshold) where T
     if T == Float64 && target isa CuArray
         @warn "Target seems to be Float64. For CUDA it is recommended to use a Float32 element type"
     end
 
-    @warn "Fresnel reflection on the glass vial is not included yet"
+    fwd, pat0 = _prepare_ray_forward(target, ps)
+    # create loss evaluation and gradient function
+    fg! = make_fg!(fwd, target, loss)
+    
+    # optimize
+    # very low initialization
+    # 0 fails with optim
+    pat0 .= 0.001
+    res = Optim.optimize(Optim.only_fg!(fg!), pat0, op.optimizer, op.options)
+    
+    # post processing
+    patterns = NNlib.relu(res.minimizer) 
+    printed_intensity = fwd(res.minimizer) 
+    return patterns, printed_intensity, res
+    # return permutedims(patterns, (3,2,1)), printed_intensity, res
+end
+
+
+
+function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics) where T
+    pat0 = radon(target, ps.angles, μ=ps.μ)
+    fwd = let angles=ps.angles, μ=ps.μ
+        fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles; μ)
+    end
+    return fwd, pat0
+end
+
+
+
+function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics) where T
+
     N = iseven(size(target, 1)) ? T(size(target, 1) - 1) : T(size(target, 1))
-    in_height = range(-N÷2, N÷2, Int(N))
     radius_pixel = T(N ÷ 2)
+    in_height = range(-N÷2, N÷2, Int(N))
+    in_height_si_units = in_height ./ (radius_pixel .+ T(0.1)) .* T(ps.R_outer)
     # find the intersection with the glass vials
     # return both the entrance intersection and exit intersection
     heights = distort_rays_vial.(in_height,
@@ -70,58 +120,46 @@ function optimize_patterns(target::AbstractArray{T}, ps::VialRayOptics, op::Grad
                     T(ps.n_vial),
                     T(ps.n_resin))
 
+
+    weights = T.(_select_transmission_coefficient(_fresnel_weights(ps, in_height_si_units)..., ps.polarization))
     # unzip
     in_height = map(x -> x[1], heights)
     out_height = map(x -> x[2], heights)
     # RadonKA.jl
-    geometry = RadonFlexibleCircle(size(target, 1), in_height, out_height)
+    geometry = RadonFlexibleCircle(size(target, 1), in_height, out_height, weights)
 
     # create forward model
     fwd = let angles=ps.angles, μ=ps.μ
         fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles; μ, geometry)
     end
-    # create loss evaluation and gradient function
-    fg! = make_fg!(fwd, target, loss)
-    
-    # optimize
-    rec0 = radon(target, ps.angles; μ=ps.μ, geometry)
-    # very low initialization
-    # 0 fails with optim
-    rec0 .= 0.001
-    res = Optim.optimize(Optim.only_fg!(fg!), rec0, op.optimizer, op.options)
-    
-    # post processing
-    patterns = NNlib.relu(res.minimizer) 
-    printed_intensity = fwd(res.minimizer) 
-    return patterns, printed_intensity, res
 
+    pat0 = radon(target, ps.angles; μ=ps.μ, geometry)
+    return fwd, pat0
 end
 
-
-function optimize_patterns(target::AbstractArray{T}, ps::ParallelRayOptics, op::GradientBased, loss::LossThreshold) where T
-    if T == Float64 && target isa CuArray
-        @warn "Target seems to be Float64. For CUDA it is recommended to use a Float32 element type"
-    end
-    # create forward model
-    fwd = let angles=ps.angles, μ=ps.μ
-        fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles; μ)
-    end
-    # create loss evaluation and gradient function
-    fg! = make_fg!(fwd, target, loss)
+"""
+https://en.wikipedia.org/wiki/Fresnel_equations#Power_(intensity)_reflection_and_transmission_coefficients
+"""
+function _fresnel_weights(ps::VialRayOptics, in_height)
+    # fix any bugs in the code below
+    # air
+    n₁ = 1 
+    n₂ = ps.n_vial
     
-    # optimize
-    rec0 = radon(target, ps.angles; μ=ps.μ)
-    # very low initialization
-    # 0 fails with optim
-    rec0 .= 0.001
-    res = Optim.optimize(Optim.only_fg!(fg!), rec0, op.optimizer, op.options)
-    
-    # post processing
-    patterns = NNlib.relu(res.minimizer) 
-    printed_intensity = fwd(res.minimizer) 
-    return patterns, printed_intensity, res
-    # return permutedims(patterns, (3,2,1)), printed_intensity, res
+    θᵢ = @. asin(in_height / ps.R_outer)
+    θₜ = @. asin(n₁ / n₂ * sin(θᵢ))
+    # fresnel equation for reflection
+    Rs = @. abs2((n₁ * cos(θᵢ) - n₂ * cos(θₜ)) / (n₁ * cos(θᵢ) + n₂ * cos(θₜ)))
+    Rp = @. abs2((n₁ * cos(θₜ) - n₂ * cos(θᵢ)) / (n₁ * cos(θₜ) + n₂ * cos(θᵢ)))
+    # fresnel equation for transmission
+    Ts = @. abs2(2 * n₁ * cos(θᵢ) / (n₁ * cos(θᵢ) + n₂ * cos(θₜ))) * (n₂ * cos(θₜ) / n₁ * cos(θᵢ))
+    Tp = @. abs2(2 * n₁ * cos(θᵢ) / (n₁ * cos(θₜ) + n₂ * cos(θᵢ))) * (n₂ * cos(θₜ) / n₁ * cos(θᵢ))
+    return 1 .- Rs, 1 .- Rp 
 end
+
+_select_transmission_coefficient(Tp, Ts, p::PolarizationParallel) = Tp
+_select_transmission_coefficient(Tp, Ts, p::PolarizationPerpendicular) = Ts
+_select_transmission_coefficient(Tp, Ts, p::PolarizationRandom) = (Tp .+ Ts) ./ 2
 
 
 """

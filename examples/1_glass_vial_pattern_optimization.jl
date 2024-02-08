@@ -27,15 +27,15 @@ end
 using SwissVAMyKnife
 
 # ╔═╡ 53c94ae4-3a86-4f3b-8e35-832859c5b465
-using ImageShow, ImageIO, PlutoUI, IndexFunArrays, Optim, RadonKA, FileIO, Colors
+using ImageShow, ImageIO, PlutoUI, IndexFunArrays, Optim, RadonKA, FileIO, Colors, Plots
 
 # ╔═╡ 2dc23db0-87b8-4044-9408-b2ffcde33ee8
 using CUDA
 
 # ╔═╡ 9c478480-163a-4fe0-ad6b-32a337a616b9
 md"# 0. Load packages
-On the first run, Julia might install some packages. So start this notebook and give it some minutes to install all packages. 
-No worries, the any future runs will be much faster to start!
+On the first run, Julia is going to install some packages automatically. So start this notebook and give it some minutes (5-10min) to install all packages. 
+No worries, any future runs will be much faster to start!
 "
 
 # ╔═╡ daf8043e-293f-495c-9b0d-b4e2b50de4a7
@@ -45,9 +45,9 @@ TableOfContents()
 use_CUDA = Ref(true && CUDA.functional())
 
 # ╔═╡ de126e87-55c7-44ef-935d-b4bd96591914
-md"
+md" ## CUDA
 CUDA accelerates the pattern generation easily by 5-20 times!
-Otherwise most of the code will be multithreaded on your CPU but we strongly recommended the usage of CUDA for big 3D pattern generation.
+Otherwise most of the code will be multithreaded on your CPU but we strongly recommended the usage of CUDA for large scale 3D pattern generation.
 
 Your CUDA is functional: **$(use_CUDA[])**
 "
@@ -186,7 +186,7 @@ plot_intensity_histogram(target, printed_intensity_μ, (0.65, 0.75))
 simshow(Array(patterns_μ[:,:,1]))
 
 # ╔═╡ 05c6a38e-a87d-46da-acb6-33b393369f4c
-
+sum(patterns_μ) / (maximum(patterns) * length(patterns))
 
 # ╔═╡ f940c2a6-ebc2-4dca-986c-fe25bfa9e4f0
 md"""# 5. Include refraction of the glass vial 
@@ -220,7 +220,7 @@ geometry_vial = VialRayOptics(
 
 # ╔═╡ 675764cb-721a-4b89-92c4-8a1ab7f5867f
 @mytime patterns_vial, printed_intensity_vial, optim_res_vial = optimize_patterns(togoc(target), geometry_vial, 
-								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=10, store_trace=true))					
+								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=15, store_trace=true))					
 								, loss)
 
 # ╔═╡ 9ddd098d-2d78-4de8-a322-40a2463adcda
