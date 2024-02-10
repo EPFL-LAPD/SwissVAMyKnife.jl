@@ -12,7 +12,7 @@ Rackson, Charles M., et al. *Object-space optimization of tomographic reconstruc
 
 """
 struct OSMO{T} <: OptimizationScheme
-    iterations::Integer
+    iterations::Int
     thresholds::Tuple{T, T}
 
     function OSMO(; iterations=10, thresholds=(0.7f0, 0.8f0))
