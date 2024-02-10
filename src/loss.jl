@@ -60,8 +60,8 @@ end
 """
 function (l::LossThreshold)(x::AbstractArray{T}, target) where T
     return @inbounds (sum(abs2.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
-                          abs2.(NNlib.relu.(x .- Int(1))                .* target) .+
-                          abs2.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (1 .- target))))
+                          abs2.(NNlib.relu.(x .- T(1))                  .* target) .+
+                          abs2.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))))
 end
 
 
@@ -71,7 +71,6 @@ end
 """
 function ChainRulesCore.rrule(l::LossThreshold{typeof(abs2), TT}, x::AbstractArray{T}, target) where {T, TT}
     res = l(x, target)
-    @show res
     function pb(y)
         y = unthunk(y)
         g = @inbounds (2 .* y .* ((.- SwissVAMyKnife.NNlib.relu.(T(l.thresholds[2]) .- x) .* target) .+  

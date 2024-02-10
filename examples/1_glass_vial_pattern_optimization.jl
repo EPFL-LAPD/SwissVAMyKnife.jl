@@ -32,9 +32,6 @@ using ImageShow, ImageIO, PlutoUI, IndexFunArrays, Optim, RadonKA, FileIO, Color
 # ╔═╡ 2dc23db0-87b8-4044-9408-b2ffcde33ee8
 using CUDA
 
-# ╔═╡ 4b946954-9432-4ffe-9b4d-8c590be96906
-using Statistics
-
 # ╔═╡ 9c478480-163a-4fe0-ad6b-32a337a616b9
 md"# 0. Load packages
 On the first run, Julia is going to install some packages automatically. So start this notebook and give it some minutes (5-10min) to install all packages. 
@@ -68,9 +65,6 @@ However, we add a trailing 1 z dimension.
 
 # ╔═╡ 4475e0c5-4ae6-403f-bb2b-c5bc8a25d18a
 sz = (256, 256, 1)
-
-# ╔═╡ cec09ba8-5707-495f-b4ac-94f346c33ce5
-
 
 # ╔═╡ b2dae3ea-5a40-498f-a134-5a9a98e58de0
 target = box(Float32, sz, (150, 110, 1)) .-  box(Float32, sz, (80, 50, 1));
@@ -155,7 +149,7 @@ Printed intensity ----------------------------- Printed intensity after threshol
 [simshow(Array(printed_intensity[:, :, 1])) simshow(ones((sz[1], 5))) simshow(thresh .< Array(printed_intensity[:, :, 1])) simshow(ones((sz[1], 5))) simshow(target[:, :, 1])]
 
 # ╔═╡ 92f5b987-13c7-463c-b150-71c51ec4aa72
-simshow(Array(patterns)[:, :, 1])
+simshow(Array(patterns)[:, :, 1], cmap=:turbo)
 
 # ╔═╡ 11af6da4-5fa2-4e48-a1c8-32bc686b8239
 md"# 4. Include Absorption of the Photo initiator
@@ -189,7 +183,7 @@ plot_intensity_histogram(target, printed_intensity_μ, (0.65, 0.75))
 [simshow(Array(printed_intensity_μ[:, :, 1])) simshow(ones((sz[1], 5))) simshow(thresh2 .< Array(printed_intensity_μ[:, :, 1])) simshow(ones((sz[1], 5))) simshow(target[:, :, 1])]
 
 # ╔═╡ 17621d91-1f93-4fcf-abf1-5e97463a0bdf
-simshow(Array(patterns_μ[:,:,1]), cmap=:gray)
+simshow(Array(patterns_μ[:,:,1]), cmap=:turbo)
 
 # ╔═╡ 05c6a38e-a87d-46da-acb6-33b393369f4c
 sum(patterns_μ) / (maximum(patterns_μ) * length(patterns))
@@ -263,9 +257,21 @@ We deactive the cell by default. However of the (...) next to the cell and click
 
 "
 
+# ╔═╡ 8824fb56-0fbf-4cba-9aea-6449627923f2
+geometry_vial2 = VialRayOptics(
+	angles=range(0, 2π, 300),
+	μ=2/256,
+	R_outer=8e-3,
+	R_inner=7.5e-3,
+	n_vial=1.5,
+	n_resin=1.48
+)
+
 # ╔═╡ 0a655d51-e3b6-413b-83de-9781974242a2
 begin
-	target_3D = box(Float32, (256, 256, 256), (80, 80, 100)) .-  box(Float32, (256, 256, 256), (60, 50, 80));
+	KK = 140
+	target_3D = box(Float32, (KK, KK, KK), (80, 80, 100)) .- 
+	box(Float32, (KK, KK, KK), (60, 50, 80));
 	target_3D = Float32.(Bool.(target_3D) .|| (rr2(size(target_3D)) .< 30^2))
 end;
 
@@ -275,46 +281,13 @@ md"z slide value $(@bind slice PlutoUI.Slider(axes(target_3D, 3), show_value=tru
 # ╔═╡ a05d8dd4-40c3-41da-9dbd-f58ab161b2d4
 simshow(target_3D[:, :, slice])
 
-# ╔═╡ 8134de5c-4bc2-498d-af0e-06ed1a1e8539
-
-
 # ╔═╡ d6a59254-bffe-4116-9335-8884eb44556f
 @mytime patterns_3D, printed_intensity_3D, optim_res_3D = optimize_patterns(togoc(target_3D), geometry_vial, 
-								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=10, store_trace=true))					
+								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=40, store_trace=true))					
 								, loss)
-
-# ╔═╡ 329e47a6-9778-43a8-b74f-74f0d59458de
-
 
 # ╔═╡ 6009b601-6988-4be8-a519-7c59660c73ab
 optim_res_3D
-
-# ╔═╡ f15224d2-6eb6-4919-aa79-30a4728edc20
-Revise.errors()
-
-# ╔═╡ 1ab55d13-5c68-40fe-875b-c29e4298f936
-SwissVAMyKnife.Zygote.refresh()
-
-# ╔═╡ 85d9c76b-9ee9-4b81-b9a8-6597309fc999
-
-
-# ╔═╡ 1ba0adc2-8dbe-4f25-9746-cb344e9fa7c7
-
-
-# ╔═╡ 9af3c5ac-934c-4d07-95ee-5b2f947b0e22
-CuArray{Bool}([1,1]) .- CuArray{Int32}([1, 0])
-
-# ╔═╡ 5607deac-8814-4810-a009-14dc223c8fa7
-CuArray{Bool}([1, 0])
-
-# ╔═╡ 2be5a610-e553-4dcb-833f-6febc813f324
-
-
-# ╔═╡ 4d0d1f34-1068-427b-b2b7-3966b533b6d6
-
-
-# ╔═╡ 0c917ace-401c-447c-b021-23aa401be718
-CuArray{Bool}(CuArray([1f0, 0f0]))
 
 # ╔═╡ fa45b520-18a8-4465-b642-a1c08de48e20
 @bind thresh4 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.5)
@@ -334,111 +307,6 @@ md"angle $(@bind angle PlutoUI.Slider(axes(patterns_3D, 2), show_value=true, def
 # ╔═╡ c8774a2b-47e0-4be6-b213-bdef6d7b0726
 simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo, set_one=true)
 
-# ╔═╡ 497cd20f-5544-43dc-8037-1263afb5cf46
-
-
-# ╔═╡ 3d4e99a1-ebf3-4b51-a3d9-8ada7fb3267c
-sz2 = (32, 32, 2)
-
-# ╔═╡ b99cbb89-6dd3-4832-ac66-d24fbc3fc060
-target2 = box(Float32, sz2, (17, 17, 1)) .-  box(Float32, sz2, (9, 9, 1));
-
-# ╔═╡ 3fadfd32-5552-43ea-9bcb-725a1a78a00d
-simshow(target2[:,:,1])
-
-# ╔═╡ f50ade1d-37f1-4f03-a081-e74642798124
-angles2 = range(0, 2π, 64)
-
-# ╔═╡ 510bd5b1-f91f-4f7b-8a84-f8eebacb9aff
-optimizer2 = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=10, store_trace=true))
-
-# ╔═╡ fa639ca1-cf25-41d0-9a29-8c325d808ba4
-geometry2 = ParallelRayOptics(angles2, nothing)
-
-# ╔═╡ 47f86ac2-a688-40c3-a4c3-fd750b698c27
-target == (0.7 .< optimize_patterns((target), geometry2, optimizer2, loss2)[2])
-
-# ╔═╡ 8e61addd-16f1-430e-86c3-a9de5568a2cb
-
-
-# ╔═╡ 28022772-2e3a-4bb7-8ad1-cbb68003e6c9
-target_c = CuArray(target_3D);
-
-# ╔═╡ 0b9f7439-cbed-45f9-b3a9-634fd2cbb87b
-target_c2 = CuArray(target_3D) .> 0.5;
-
-# ╔═╡ dc277892-b9c0-4f00-8f93-d5d5309b17dd
-isobject = target_c .> 0.5;
-
-# ╔═╡ 6a7b08e1-aa7f-42e5-88b0-f80c30e6501f
-notobject = target_c .< 0.5;
-
-# ╔═╡ ac674a47-03b6-407f-968a-274f3583b035
-Revise.retry()
-
-# ╔═╡ 55bcfcd9-8916-42ab-9621-29b0197b6a71
-x = CUDA.rand(size(target_3D)...);
-
-# ╔═╡ 25d9eb7a-e8c9-437c-bbf9-97b93f1f07b3
-CUDA.@time loss(x, isobject, notobject)
-
-# ╔═╡ 75084371-028e-4033-a34d-3790d5cf4c8e
-CUDA.@time loss(x, target_c2)
-
-# ╔═╡ 87fd8a28-3961-4074-a408-9d9de836abbc
-CUDA.@time b = SwissVAMyKnife.Zygote.gradient(loss, x, isobject, notobject)[1];
-
-# ╔═╡ 1d7c9a12-0f92-4388-95ff-0d75b68a411c
-CUDA.@time a = SwissVAMyKnife.Zygote.gradient(loss, x, target_c2)[1];
-
-# ╔═╡ db939035-e20c-49e7-8e77-5fce26bf656b
-all(a .== b)
-
-# ╔═╡ 532231b2-dd7c-4b83-882b-ffc0ff0057c0
-SwissVAMyKnife.Zygote.refresh()
-
-# ╔═╡ 9cc02718-fbc9-4d4a-9db8-f4cc467b99ae
-Revise.errors()
-
-# ╔═╡ 7a6c4c82-d695-4eaa-b7df-988a193bf34c
-g(x, target, y, l, T) = @inbounds (2 .* y .* ((.- SwissVAMyKnife.NNlib.relu.(T(l.thresholds[2]) .- x) .* target) .+  (SwissVAMyKnife.NNlib.relu.(x .- Int(1))                .* target) .+ (SwissVAMyKnife.NNlib.relu.(x .- T(l.thresholds[1])) .* (1 .- target))))
-
-# ╔═╡ b2b7338e-8c56-48bc-ad41-1c5f1cf59335
-typeof(target_3D)
-
-# ╔═╡ 2290ed9e-ce05-4e8b-868d-6cade38183be
-size(b)
-
-# ╔═╡ 021fc647-ad9f-4d1c-9b00-9be740fda4a0
-g(x) = mean(x)
-
-# ╔═╡ 8181cd4b-1d07-4497-ba71-5bbfa8668334
-CUDA.@time g
-
-# ╔═╡ 0deddef6-ec33-4702-be37-7a0a3483fc77
-CUDA.@time c = g(x, target_c, 1, loss, Float32);
-
-# ╔═╡ be52a362-9e32-4b3b-a3df-5ed70396ee73
-sum(c .≈ a) / length(c)
-
-# ╔═╡ c1ab2677-d00a-46b7-bacc-38ce0b7493f6
-typeof(c)
-
-# ╔═╡ 5781a316-ca96-4b2e-8040-4b42633c1d06
-CUDA.@time SwissVAMyKnife.Zygote.gradient(mean, x);
-
-# ╔═╡ a485a422-f5d2-4c9b-af88-99b161dce06d
-CUDA.@time SwissVAMyKnife.Zygote.gradient(sum, x);
-
-# ╔═╡ 5af70e11-0a8c-4858-b82d-fad554104a8c
-loss2 = LossThreshold(sum_f=abs, thresholds=(0.65f0, 0.75f0))
-
-# ╔═╡ 6b413ee2-be9f-499f-8a79-472fe205fc3f
-# ╠═╡ disabled = true
-#=╠═╡
-loss2 = LossThreshold(thresholds=(0.65, 0.75))
-  ╠═╡ =#
-
 # ╔═╡ Cell order:
 # ╟─9c478480-163a-4fe0-ad6b-32a337a616b9
 # ╠═fb4bb1e2-c5e3-11ee-2f22-0bf5f621e215
@@ -452,7 +320,6 @@ loss2 = LossThreshold(thresholds=(0.65, 0.75))
 # ╠═9d1ffd4d-1fe3-4f5c-bdc3-817fd0f23c7b
 # ╟─465e830f-ca33-427a-ad7b-e18f3bbaa3c4
 # ╠═4475e0c5-4ae6-403f-bb2b-c5bc8a25d18a
-# ╠═cec09ba8-5707-495f-b4ac-94f346c33ce5
 # ╠═b2dae3ea-5a40-498f-a134-5a9a98e58de0
 # ╠═047023bf-96dd-4427-aa13-3fb2340af90e
 # ╟─1d2bdd44-95d2-45ef-8e24-c8ca3df7485a
@@ -493,60 +360,15 @@ loss2 = LossThreshold(thresholds=(0.65, 0.75))
 # ╠═fc239b37-dc88-48cd-9479-99074d96ece5
 # ╠═7de5d398-20d6-44e2-b2eb-3007111e146f
 # ╟─a7cafba6-849a-4eb8-9709-a76cb98e9879
+# ╠═8824fb56-0fbf-4cba-9aea-6449627923f2
 # ╠═0a655d51-e3b6-413b-83de-9781974242a2
 # ╟─877b1484-969c-45d7-a3e7-4f0301a81a4b
 # ╠═a05d8dd4-40c3-41da-9dbd-f58ab161b2d4
-# ╠═8134de5c-4bc2-498d-af0e-06ed1a1e8539
 # ╠═d6a59254-bffe-4116-9335-8884eb44556f
-# ╠═329e47a6-9778-43a8-b74f-74f0d59458de
-# ╠═5af70e11-0a8c-4858-b82d-fad554104a8c
 # ╠═6009b601-6988-4be8-a519-7c59660c73ab
-# ╠═f15224d2-6eb6-4919-aa79-30a4728edc20
-# ╠═1ab55d13-5c68-40fe-875b-c29e4298f936
-# ╠═85d9c76b-9ee9-4b81-b9a8-6597309fc999
-# ╠═1ba0adc2-8dbe-4f25-9746-cb344e9fa7c7
-# ╠═9af3c5ac-934c-4d07-95ee-5b2f947b0e22
-# ╠═5607deac-8814-4810-a009-14dc223c8fa7
-# ╠═2be5a610-e553-4dcb-833f-6febc813f324
-# ╠═4d0d1f34-1068-427b-b2b7-3966b533b6d6
-# ╠═0c917ace-401c-447c-b021-23aa401be718
-# ╠═fa45b520-18a8-4465-b642-a1c08de48e20
+# ╟─fa45b520-18a8-4465-b642-a1c08de48e20
 # ╟─10cc0e79-5d5b-43cf-afb8-ad21875d6d97
 # ╟─0835d1b0-a562-4edf-939e-3044f94e53c7
-# ╠═83793ffe-38de-4a76-b80f-8dee1d18c5a5
+# ╟─83793ffe-38de-4a76-b80f-8dee1d18c5a5
 # ╟─262b96e8-a78c-441c-9b46-2d87636286d7
 # ╠═c8774a2b-47e0-4be6-b213-bdef6d7b0726
-# ╠═497cd20f-5544-43dc-8037-1263afb5cf46
-# ╠═3d4e99a1-ebf3-4b51-a3d9-8ada7fb3267c
-# ╠═b99cbb89-6dd3-4832-ac66-d24fbc3fc060
-# ╠═3fadfd32-5552-43ea-9bcb-725a1a78a00d
-# ╠═6b413ee2-be9f-499f-8a79-472fe205fc3f
-# ╠═f50ade1d-37f1-4f03-a081-e74642798124
-# ╠═510bd5b1-f91f-4f7b-8a84-f8eebacb9aff
-# ╠═fa639ca1-cf25-41d0-9a29-8c325d808ba4
-# ╠═47f86ac2-a688-40c3-a4c3-fd750b698c27
-# ╠═8e61addd-16f1-430e-86c3-a9de5568a2cb
-# ╠═28022772-2e3a-4bb7-8ad1-cbb68003e6c9
-# ╠═0b9f7439-cbed-45f9-b3a9-634fd2cbb87b
-# ╠═dc277892-b9c0-4f00-8f93-d5d5309b17dd
-# ╠═6a7b08e1-aa7f-42e5-88b0-f80c30e6501f
-# ╠═ac674a47-03b6-407f-968a-274f3583b035
-# ╠═25d9eb7a-e8c9-437c-bbf9-97b93f1f07b3
-# ╠═75084371-028e-4033-a34d-3790d5cf4c8e
-# ╠═55bcfcd9-8916-42ab-9621-29b0197b6a71
-# ╠═87fd8a28-3961-4074-a408-9d9de836abbc
-# ╠═1d7c9a12-0f92-4388-95ff-0d75b68a411c
-# ╟─db939035-e20c-49e7-8e77-5fce26bf656b
-# ╠═8181cd4b-1d07-4497-ba71-5bbfa8668334
-# ╠═532231b2-dd7c-4b83-882b-ffc0ff0057c0
-# ╠═9cc02718-fbc9-4d4a-9db8-f4cc467b99ae
-# ╠═be52a362-9e32-4b3b-a3df-5ed70396ee73
-# ╠═c1ab2677-d00a-46b7-bacc-38ce0b7493f6
-# ╠═7a6c4c82-d695-4eaa-b7df-988a193bf34c
-# ╠═0deddef6-ec33-4702-be37-7a0a3483fc77
-# ╠═b2b7338e-8c56-48bc-ad41-1c5f1cf59335
-# ╠═2290ed9e-ce05-4e8b-868d-6cade38183be
-# ╠═4b946954-9432-4ffe-9b4d-8c590be96906
-# ╠═021fc647-ad9f-4d1c-9b00-9be740fda4a0
-# ╠═5781a316-ca96-4b2e-8040-4b42633c1d06
-# ╠═a485a422-f5d2-4c9b-af88-99b161dce06d
