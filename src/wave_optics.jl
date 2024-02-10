@@ -37,7 +37,7 @@ function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::Loss
     L = ps.L
     λ = ps.λ
 
-    z = similar(target, (size(ps.z),))
+    z = similar(target, (size(ps.z, 1),))
     z .= typeof(z)(ps.z)
 
     if !isnothing(μ)
@@ -143,8 +143,8 @@ function fwd_wave(x, AS_abs2, angles)
 	tmp_rot = similar(intensity)
 	tmp_rot .= 0
 	for (i, angle) in enumerate(angles)
-		CUDA.@sync tmp = AS_abs2(view(x, :, :, i))
-		CUDA.@sync intensity .+= PermutedDimsArray(imrotate!(tmp_rot, PermutedDimsArray(tmp, (2, 3, 1)), angle), (3, 1, 2))
+		tmp = AS_abs2(view(x, :, :, i))
+		intensity .+= PermutedDimsArray(imrotate!(tmp_rot, PermutedDimsArray(tmp, (2, 3, 1)), angle), (3, 1, 2))
 		tmp_rot .= 0
 	end
     # @warn "divide by max in forward"
@@ -162,7 +162,7 @@ function ChainRulesCore.rrule(::typeof(fwd_wave), x, AS_abs2, angles)
 		tmp_rot = similar(res);
 		tmp_rot .= 0;
 		for (i, angle) in enumerate(angles)
-			CUDA.@sync tmp = Zygote._pullback(AS_abs2, view(x, :, :, i))[2](
+			tmp = Zygote._pullback(AS_abs2, view(x, :, :, i))[2](
 					PermutedDimsArray(DiffImageRotation.∇imrotate!(tmp_rot, PermutedDimsArray(ȳ, (2, 3, 1)), res, angle), (3, 1, 2))
 			)[2]
 			

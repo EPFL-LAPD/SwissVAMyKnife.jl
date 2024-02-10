@@ -250,8 +250,8 @@ sum(patterns_vial) / (maximum(patterns_vial) * length(patterns_vial))
 
 # ╔═╡ a7cafba6-849a-4eb8-9709-a76cb98e9879
 md"# 6. Let's do a bigger 3D object!
-Be a little patient, this might take ~30s to a minute on a GPU.
-On a CPU much longer accordingly!
+Be a little patient, this might take 10 seconds on a GPU.
+On a CPU much longer accordingly, some minutes.
 
 We deactive the cell by default. However of the (...) next to the cell and click *Enable Cell*
 
@@ -269,7 +269,7 @@ geometry_vial2 = VialRayOptics(
 
 # ╔═╡ 0a655d51-e3b6-413b-83de-9781974242a2
 begin
-	KK = 140
+	KK = 130
 	target_3D = box(Float32, (KK, KK, KK), (80, 80, 100)) .- 
 	box(Float32, (KK, KK, KK), (60, 50, 80));
 	target_3D = Float32.(Bool.(target_3D) .|| (rr2(size(target_3D)) .< 30^2))
@@ -282,9 +282,12 @@ md"z slide value $(@bind slice PlutoUI.Slider(axes(target_3D, 3), show_value=tru
 simshow(target_3D[:, :, slice])
 
 # ╔═╡ d6a59254-bffe-4116-9335-8884eb44556f
+# ╠═╡ disabled = true
+#=╠═╡
 @mytime patterns_3D, printed_intensity_3D, optim_res_3D = optimize_patterns(togoc(target_3D), geometry_vial, 
-								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=40, store_trace=true))					
+								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=20, store_trace=true))					
 								, loss)
+  ╠═╡ =#
 
 # ╔═╡ 6009b601-6988-4be8-a519-7c59660c73ab
 optim_res_3D
