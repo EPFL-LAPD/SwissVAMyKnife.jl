@@ -99,7 +99,7 @@ end
 function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics) where T
     pat0 = radon(target, ps.angles, μ=ps.μ)
     fwd = let angles=ps.angles, μ=ps.μ
-        fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles; μ)
+        fwd(x) = backproject(NNlib.relu.(x) ./ length(angles), angles; μ)
     end
     return fwd, pat0
 end
@@ -129,8 +129,8 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics) where
     geometry = RadonFlexibleCircle(size(target, 1), in_height, out_height, weights)
 
     # create forward model
-    fwd = let angles=ps.angles, μ=ps.μ
-        fwd(x) = iradon(NNlib.relu.(x) ./ length(angles), angles; μ, geometry)
+    fwd = let angles=ps.angles, μ=ps.μ, geometry=geometry
+        fwd(x) = backproject(NNlib.relu.(x) ./ length(angles), angles; μ, geometry)
     end
 
     pat0 = radon(target, ps.angles; μ=ps.μ, geometry)
@@ -186,7 +186,7 @@ function iter!(buffer, img, θs, μ; clip_sinogram=true)
 		sinogram .= max.(sinogram, 0)
 	end
 	
-	img_recon = iradon(sinogram, θs, μ)
+	img_recon = backproject(sinogram, θs, μ)
     img_recon ./= maximum(img_recon)
 
 
@@ -228,7 +228,7 @@ function iterative_optimization(img::AbstractArray{T}, θs, μ=nothing; threshol
 		push!(losses, loss(tmp))
 	end
 
-	printed = iradon(s, θs, μ)
+	printed = backproject(s, θs, μ)
     printed ./= maximum(printed)
     return permutedims(s, (3,2,1)), printed, losses
 end

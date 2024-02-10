@@ -291,9 +291,9 @@ version = "0.1.2"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
-git-tree-sha1 = "8cfa272e8bdedfa88b6aefbbca7c19f1befac519"
+git-tree-sha1 = "9c4708e3ed2b799e6124b5673a712dda0b596a9b"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
-version = "2.3.0"
+version = "2.3.1"
 
 [[deps.Configurations]]
 deps = ["ExproniconLite", "OrderedCollections", "TOML"]
@@ -1349,9 +1349,9 @@ version = "0.8.1+2"
 
 [[deps.OpenMPI_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Hwloc_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "MPIPreferences", "PMIx_jll", "TOML", "Zlib_jll", "libevent_jll", "prrte_jll"]
-git-tree-sha1 = "1d1421618bab0e820bdc7ae1a2b46ce576981273"
+git-tree-sha1 = "f46caf663e069027a06942d00dced37f1eb3d8ad"
 uuid = "fe0851c0-eecd-5654-98d4-656369965a5c"
-version = "5.0.1+0"
+version = "5.0.2+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1618,9 +1618,9 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[deps.RadonKA]]
 deps = ["Atomix", "ChainRulesCore", "FFTW", "IndexFunArrays", "KernelAbstractions", "PrecompileTools"]
-git-tree-sha1 = "e366690114cdd6309a04db0caa8175a0daae3875"
+git-tree-sha1 = "ce97c90c44d6cb7b387090831208a49d411b2371"
 uuid = "86de8297-835b-47df-b249-c04e8db91db5"
-version = "0.3.2"
+version = "0.5.0"
 
 [[deps.Random]]
 deps = ["SHA"]
@@ -1732,12 +1732,13 @@ version = "0.7.0"
 
 [[deps.SciMLBase]]
 deps = ["ADTypes", "ArrayInterface", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FillArrays", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "PrecompileTools", "Preferences", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLOperators", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables", "TruncatedStacktraces"]
-git-tree-sha1 = "75bae786dc8b07ec3c2159d578886691823bcb42"
+git-tree-sha1 = "fe886daed83db8f4881ff7b6ef10853055fa8b4b"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "2.23.1"
+version = "2.23.2"
 
     [deps.SciMLBase.extensions]
     SciMLBaseChainRulesCoreExt = "ChainRulesCore"
+    SciMLBaseMakieExt = "Makie"
     SciMLBasePartialFunctionsExt = "PartialFunctions"
     SciMLBasePyCallExt = "PyCall"
     SciMLBasePythonCallExt = "PythonCall"
@@ -1747,6 +1748,7 @@ version = "2.23.1"
     [deps.SciMLBase.weakdeps]
     ChainRules = "082447d4-558c-5d27-93f4-14fc19e9eca2"
     ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
     PartialFunctions = "570af359-4316-4cb7-8c74-252c00c2016b"
     PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
     PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
@@ -1858,9 +1860,9 @@ version = "0.1.1"
 
 [[deps.Static]]
 deps = ["IfElse"]
-git-tree-sha1 = "b366eb1eb68075745777d80861c6706c33f588ae"
+git-tree-sha1 = "d2fdac9ff3906e27f7a618d47b676941baa6c80c"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "0.8.9"
+version = "0.8.10"
 
 [[deps.StaticArrayInterface]]
 deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Requires", "SparseArrays", "Static", "SuiteSparse"]
@@ -1928,7 +1930,7 @@ uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "7.2.1+1"
 
 [[deps.SwissVAMyKnife]]
-deps = ["CUDA", "ChainRulesCore", "DiffImageRotation", "FFTW", "FileIO", "FourierTools", "HDF5", "ImageShow", "IndexFunArrays", "NDTools", "NNlib", "Optim", "Parameters", "Plots", "RadonKA", "WaveOpticsPropagation", "Zygote"]
+deps = ["CUDA", "ChainRulesCore", "DiffImageRotation", "FFTW", "FileIO", "FourierTools", "HDF5", "ImageShow", "IndexFunArrays", "NDTools", "NNlib", "Optim", "Parameters", "Plots", "RadonKA", "Statistics", "WaveOpticsPropagation", "Zygote"]
 path = ".."
 uuid = "fafdf525-54c7-48ec-ae29-528bd4cccfab"
 version = "0.1.0"

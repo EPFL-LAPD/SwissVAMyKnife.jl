@@ -17,6 +17,7 @@ using Parameters
 using NNlib
 using NDTools
 using FourierTools
+using Statistics
 
 export PropagationScheme, OptimizationScheme
 

@@ -50,12 +50,9 @@ function make_fg!(fwd, target, loss)
     mask = similar(target, Bool, (size(target, 1), size(target, 2)))
 	mask[:, :] .= rr2(eltype(target), (size(target)[1:2]..., )) .<= (size(target, 1) ÷ 2  - 1)^2
 
-	notobject = iszero.(target)
-	isobject = isone.(target)
-
-    f = let loss=loss, fwd=fwd, notobject=notobject, isobject=isobject
+    f = let loss=loss, fwd=fwd, target= (target .> 0.5f0)
         function f(x::AbstractArray{T}) where T
-            return loss(fwd(x), isobject, notobject)
+            return loss(fwd(x), target)
 		end
     end
 

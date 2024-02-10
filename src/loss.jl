@@ -53,16 +53,31 @@ struct LossThreshold{F, T} <: LossTarget
     end
 end
 
+"""
+    lesson learnt from this: don't to x[isobject] where isobject would be a boolean array.
+    rather express it with arithmetics. this is much faster
 
 """
-   
+function (l::LossThreshold)(x::AbstractArray{T}, target) where T
+    return @inbounds (sum(abs2.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
+                          abs2.(NNlib.relu.(x .- Int(1))                .* target) .+
+                          abs2.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (1 .- target))))
+end
+
+
 """
-@inline function (l::LossThreshold)(x::AbstractArray{T}, isobject, notobject) where T
-    # see https://github.com/FluxML/Zygote.jl/issues/1498
-    #return (sum(x -> l.sum_f(NNlib.relu(l.thresholds[2] - x)),  view(x, isobject)) +
-    #        sum(x -> l.sum_f(NNlib.relu(x - 1)              ),  view(x, isobject)) +
-    #        sum(x -> l.sum_f(NNlib.relu(x - l.thresholds[1])),  view(x, notobject)))
-    return @inbounds (sum(abs2, NNlib.relu.(T(l.thresholds[2]) .- view(x, isobject))) +
-            sum(abs2, NNlib.relu.(view(x, isobject) .- 1)) +
-            sum(abs2, NNlib.relu.(view(x, notobject) .- T(l.thresholds[1]))))
+    custom rules for the abs2 loss function (default).
+    no real speed gain but much less memory consumption 
+"""
+function ChainRulesCore.rrule(l::LossThreshold{typeof(abs2), TT}, x::AbstractArray{T}, target) where {T, TT}
+    res = l(x, target)
+    @show res
+    function pb(y)
+        y = unthunk(y)
+        g = @inbounds (2 .* y .* ((.- SwissVAMyKnife.NNlib.relu.(T(l.thresholds[2]) .- x) .* target) .+  
+                                  (SwissVAMyKnife.NNlib.relu.(x .- Int(1))                .* target) .+ 
+                                  (SwissVAMyKnife.NNlib.relu.(x .- T(l.thresholds[1])) .* (1 .- target))))
+        return NoTangent(), g, NoTangent() 
+    end
+    return res, pb
 end
