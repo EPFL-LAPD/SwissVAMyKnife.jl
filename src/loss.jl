@@ -1,11 +1,20 @@
 export LossTarget, LossThreshold 
 
+"""
+    LossTarget
+
+Abstract type for loss functions. 
+List of implemented loss functions:
+* `LossThreshold`
+
+"""
 abstract type LossTarget end
 
 """
     LossThreshold(;sum_f=abs2, thresholds=(0.65f0, 0.75f0))
 
-Creates a type to calculate the following loss function:
+Loss function for polymerization. 
+Keeps the object voxels in the range `[T_U, 1]` and the empty space in the range `[0, T_L]`.
 
 \$\$\\mathcal{L} = \\underbrace{\\sum_{v \\,\\in\\,\\text{object}} |\\text{ReLu}(T_U - I_v)|^K}_\\text{force object polymerization} + \$\$
 \$\$+\\underbrace{\\sum_{v\\,\\notin\\,\\text{object}} |\\text{ReLu}(I_v - T_L) |^K}_{\\text{keep empty space unpolymerized}} +\$\$
