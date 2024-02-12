@@ -72,3 +72,11 @@ end
     target = x .> 0.5
     test_rrule(l ⊢ ChainRulesTestUtils.NoTangent(), x, target ⊢ ChainRulesTestUtils.NoTangent())
 end
+
+
+@testset "Refraction of glass and resin" begin
+    @test SwissVAMyKnife.distort_rays_vial(-100.0, 200.0, 180.0, 1.3, 1.3 * 1.7)[1] ≈ (-103.5945990123854, 17.585052942618567)[1]
+    @test SwissVAMyKnife.distort_rays_vial(-100.0, 200.0, 180.0, 1.3, 1.3 * 1.7)[2] ≈ (-103.5945990123854, 17.585052942618567)[2]
+    @test SwissVAMyKnife.distort_rays_vial(-100.0, 200.0, 180.0, 1.37, 1.37 * 1.37)[1] ≈ (-102.26082855257938, -0.5207635370929073)[1]
+    @test SwissVAMyKnife.distort_rays_vial(-100.0, 200.0, 180.0, 1.37, 1.37 * 1.37)[2] ≈ (-102.26082855257938, -0.5207635370929073)[2]
+end
