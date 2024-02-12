@@ -20,23 +20,36 @@ struct PolarizationRandom <: Polarization end
     ParallelRayOptics(angles, μ)
 
 Type to represent the parallel ray optical approach.
-This is equivalent to an inverse Radon transform as the forward model to the printer.
+This is suited for a printer with an index matching bath.
+This is equivalent to an inverse (attenuated) Radon transform as the forward model of the printer. 
 
 
 - `angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
 - `μ` is the absorption coefficient of the resin in units of pixels.
-So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
+   So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
 
+See also [`VialRayOptics`](@ref) for a printer without index matching bath.
+
+# Examples
+```jldoctest
+julia> ParallelRayOptics(range(0, 2π, 401)[begin:end-1], 1 / 256)
+ParallelRayOptics{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}}(0.0:0.015707963267948967:6.267477343911637, 0.00390625)
+
+julia> ParallelRayOptics(range(0, 2π, 401)[begin:end-1], nothing)
+ParallelRayOptics{Nothing, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}}(0.0:0.015707963267948967:6.267477343911637, nothing)
+```
 """
 struct ParallelRayOptics{T, A} <: PropagationScheme
     angles::A
     μ::T
 end
 
+
 """
 
-Type to represent a ray optical approach where refraction of the glass vial
-is taken into account.
+Type to represent a ray optical approach where refraction and reflection intensity loss at the glass vial is considered.
+This is equivalent to an inverse (attenuated) Radon transform as the forward model of the printer. 
+
 
 - `angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
 - `μ` is the absorption coefficient of the resin in units of pixels.
@@ -46,6 +59,27 @@ is taken into account.
 - `n_vial` is the refractive index of the glass vial.
 - `n_resin` is the refractive index of the resin.
 - `polarization=PolarizationRandom()` is the polarization of the light. See [`Polarization`](@ref) for the options. 
+
+
+# Examples
+```jldoctest
+julia> VialRayOptics(angles=range(0,2π, 501)[begin:end-1],
+                     μ=nothing,
+                     R_outer=6e-3,
+                     R_inner=5.5e-3,
+                     n_vial=1.47,
+                     n_resin=1.48,
+                     polarization=PolarizationRandom()
+                     )
+VialRayOptics{Float64, Nothing, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, PolarizationRandom}
+  angles: StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}
+  μ: Nothing nothing
+  R_outer: Float64 0.006
+  R_inner: Float64 0.0055
+  n_vial: Float64 1.47
+  n_resin: Float64 1.48
+  polarization: PolarizationRandom PolarizationRandom()
+```
 """
 @with_kw struct VialRayOptics{T, ToN, A, P} <: PropagationScheme
     angles::A
@@ -62,7 +96,8 @@ end
 """
     optimize_patterns(target, ps::{VialRayOptics, ParallelRayOptics}, op::GradientBased, loss::LossTarget)
 
-Abstract method to optimize a `target` volume.
+Function to optimize a `target` volume.
+This method returns the optimized patterns, the printed intensity and the optimization result.
 
 See [`VialRayOptics`](@ref) how to specify the geometry of the vial.
 See [`ParallelRayOptics`](@ref) how to specify the geometry of the vial.
@@ -71,6 +106,17 @@ See [`PropagationScheme`](@ref) for the options for the different propagation sc
 See [`OptimizationScheme`](@ref) for the options for the different optimization schemes.
 See [`LossTarget`](@ref) for the options for the different loss functions.
 
+# Examples
+```julia
+julia> patterns, printed_intensity, res = optimize_patterns(target, VialRayOptics(angles=range(0,2π, 501)[begin:end-1],
+                     μ=nothing,
+                     R_outer=6e-3,
+                     R_inner=5.5e-3,
+                     n_vial=1.47,
+                     n_resin=1.48,
+                     polarization=PolarizationRandom()
+                     ), GradientBased(), LossThreshold())
+```
 """
 function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, ParallelRayOptics}, op::GradientBased, loss::LossThreshold) where T
     if T == Float64 && target isa CuArray
@@ -137,6 +183,7 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics) where
     return fwd, pat0
 end
 
+
 """
 https://en.wikipedia.org/wiki/Fresnel_equations#Power_(intensity)_reflection_and_transmission_coefficients
 """
@@ -167,6 +214,11 @@ _select_transmission_coefficient(Tp, Ts, p::PolarizationRandom) = (Tp .+ Ts) ./ 
 
 Optimize patterns with the `OSMO` optimization algorithm.
 This is only supported for `ParallelRayOptics`.
+
+# Examples
+```julia
+julia> optimize_patterns(target, ParallelRayOptics(range(0, 2π, 401)[begin:end-1], 1 / 256), OSMO())
+```
 """
 function optimize_patterns(target::AbstractArray{T}, ps::ParallelRayOptics, op::OSMO) where T
     if T == Float64 && target isa CuArray

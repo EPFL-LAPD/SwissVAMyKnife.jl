@@ -3,6 +3,8 @@ export printing_errors, plot_intensity_histogram, save_patterns
 """
     printing_errors(target, printed, thresholds)
 
+Calculate the printing errors of the `printed` object compare with the `target` object.
+`thresholds` should indicate the used threshold values for polymerization.
 """
 function printing_errors(target, printed, thresholds)
     isobject = target .≈ 1
@@ -56,7 +58,6 @@ Save all arguments into the path `fpath`.
 `fpath` should be a path.
 
 `overwrite=false` per default and does not overwrite existing files!
-
 """
 function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
     @assert size(angles, 1) == size(patterns, 2) "Size mismatch between angles and patterns"

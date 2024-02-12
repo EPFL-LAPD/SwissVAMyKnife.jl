@@ -4,6 +4,7 @@ export LossTarget, LossThreshold
     LossTarget
 
 Abstract type for loss functions. 
+
 List of implemented loss functions:
 * `LossThreshold`
 
@@ -34,23 +35,18 @@ julia> x = [1.0, 0.0, 0.55]
  0.0
  0.55
 
-julia> isobject = [true, false, true]
-3-element Vector{Bool}:
+julia> target = [1, 0, 1]
+3-element Vector{Int64}:
  1
  0
  1
 
-julia> notobject = .!(isobject)
-3-element BitVector:
- 0
- 1
- 0
-
-julia> l(x, isobject, notobject)
+julia> l(x, target)
 0.022499999999999975
 
 julia> (0.7 - 0.55)^2
-0.0225
+0.022499999999999975
+
 ```
 """
 struct LossThreshold{F, T} <: LossTarget 

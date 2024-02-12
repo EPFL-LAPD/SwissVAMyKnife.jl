@@ -6,6 +6,7 @@ export OSMO, GradientBased
     OSMO(; iterations=10, thresholds=(0.7f0, 0.8f0))
    
 Define parameters for the OSMO optimization algorithm.
+We recommend to use [`GradientBased`](@ref) instead of OSMO.
 
 # Reference
 Rackson, Charles M., et al. *Object-space optimization of tomographic reconstructions for additive manufacturing.* Additive Manufacturing 48 (2021): 102367.
@@ -23,9 +24,15 @@ end
 """
     GradientBased(; optimizer=LBFSG(), options=Optim.options(iterations=30, store_trace=true))
 
+Define parameters for the `GradientBased` optimization algorithm.
+Optim.jl is used for the optimization.
+L-BFGS is the default optimizer which performs well for the optimization of the reconstruction problem.
+30 iterations are used as default. The trace of the optimization is stored by default.
 
-Define type for the gradient descent based optimization scheme.
-Based on Optim.jl.
+ # Example
+```julia
+julia> GradientBased(; optimizer=LBFGS(), options=Optim.Options(iterations=30, store_trace=true))
+```
 """
 struct GradientBased{O, I} <: OptimizationScheme
     optimizer::O
