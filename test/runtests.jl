@@ -30,6 +30,8 @@ using ChainRulesTestUtils
     @test target2 == (0.45 .< optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))[2])
     @test target2 !== (0.45 .> optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))[2])
 
+    patterns, printed, res = optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))
+    save_patterns(tempdir(), patterns, printed, angles2, target2; overwrite=true)
 end
 
 
