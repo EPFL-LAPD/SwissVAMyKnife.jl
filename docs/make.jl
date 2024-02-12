@@ -7,6 +7,7 @@ makedocs(modules = [SwissVAMyKnife],
             "SwissVAMyKnife.jl" => "index.md",
             "Background" => "background.md",
             "Ray Optical TVAM" => [
+                "Analytic Derivation of Vial Refraction" =>  "ray_derivation.md",
                 "Simple Ray Optical TVAM" =>  "ray_TVAM.md",
             ],
             "Simple Wave Optical TVAM " =>  "wave_TVAM.md",
