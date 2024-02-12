@@ -1,7 +1,7 @@
 export WaveOptics
 
 """
-   WaveOptics(;z, λ, L, μ=nothing, angles)
+    WaveOptics(;z, λ, L, μ=nothing, angles)
 
 # Parameters
 * `z`: the different depths we propagate the field. Should be `Vector` or range.
@@ -9,6 +9,7 @@ export WaveOptics
 * `L`: The side length of the array. You should satisfy `L ≈ abs(z[begin]) + abs(z[end])`
 * `μ`: Absorption coefficient.
 * `angles`: the angles we illuminate the sample. Should be `Vector` or range. 
+
 """
 @with_kw struct WaveOptics{T2, T, A, ToN} <: PropagationScheme
     z::T2
@@ -20,6 +21,9 @@ end
 
 
 """
+    optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::LossThreshold)
+
+Optimize the patterns to match the target with the wave optical model.
 
 
 """
