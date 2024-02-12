@@ -180,13 +180,13 @@ end
 iterate one step in the OSMO algorithm, allocation free.
 """
 function iter!(buffer, img, θs, μ; clip_sinogram=true)
-	sinogram = radon(img, θs, μ)
+	sinogram = radon(img, θs; μ)
 	
 	if clip_sinogram
 		sinogram .= max.(sinogram, 0)
 	end
 	
-	img_recon = backproject(sinogram, θs, μ)
+	img_recon = backproject(sinogram, θs; μ)
     img_recon ./= maximum(img_recon)
 
 
@@ -228,7 +228,7 @@ function iterative_optimization(img::AbstractArray{T}, θs, μ=nothing; threshol
 		push!(losses, loss(tmp))
 	end
 
-	printed = backproject(s, θs, μ)
+	printed = backproject(s, θs; μ)
     printed ./= maximum(printed)
     return permutedims(s, (3,2,1)), printed, losses
 end

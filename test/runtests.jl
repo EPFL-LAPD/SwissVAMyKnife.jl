@@ -15,6 +15,7 @@ using ChainRulesTestUtils
 
 
     @test target2 == (0.7 .< optimize_patterns((target2), geometry2, optimizer2, LossThreshold(thresholds=(0.65, 0.75)))[2])
+    @test target2 == (0.7 .< optimize_patterns((target2), geometry2, OSMO(iterations=50, thresholds=(0.65, 0.75)))[2])
     @test target2 == (0.45 .< optimize_patterns((target2), geometry2, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))[2])
 
     geometry_vial = VialRayOptics(
@@ -25,6 +26,7 @@ using ChainRulesTestUtils
     	n_vial=1.5,
     	n_resin=1.48
     )
+    @test target2 == (0.7 .< optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.65, 0.75)))[2])
     @test target2 == (0.7 .< optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.65, 0.75)))[2])
     @test target2 !== (0.7 .> optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.65, 0.75)))[2])
     @test target2 == (0.45 .< optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))[2])
