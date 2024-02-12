@@ -107,7 +107,7 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
     isdir(fpath) || mkpath(fpath_images) 
     # convert to proper Grayscale image
     printed = simshow(printed, cmap=:turbo)
-    for i in 1:size(printed, 1)
+    for i in 1:size(printed, 3)
         number = lpad(string(i), 5, "0")
         fname = joinpath(fpath_images, number * ".png")
         if isfile(fname) && overwrite==false

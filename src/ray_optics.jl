@@ -47,9 +47,9 @@ is taken into account.
 - `n_resin` is the refractive index of the resin.
 - `polarization` is the polarization of the light.  
 """
-@with_kw struct VialRayOptics{T, A, P} <: PropagationScheme
+@with_kw struct VialRayOptics{T, ToN, A, P} <: PropagationScheme
     angles::A
-    μ::T=nothing
+    μ::ToN=nothing
     R_outer::T=8e-3
     R_inner::T=7.6e-3
     n_vial::T
