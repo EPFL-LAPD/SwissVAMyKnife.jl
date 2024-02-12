@@ -4,6 +4,7 @@ PropagationScheme
 ParallelRayOptics
 VialRayOptics
 WaveOptics
+Polarization
 ```
 
 # Optimization

@@ -1,13 +1,13 @@
 export ParallelRayOptics, VialRayOptics
-export PolarizationParallel, PolarizationPerpendicular, PolarizationRandom
+export Polarization, PolarizationParallel, PolarizationPerpendicular, PolarizationRandom
 
 
 """
     Polarization
 
-- `PolarizationParallel` is the parallel polarization. 
-- `PolarizationPerpendicular` is the perpendicular polarization.
-- `PolarizationRandom` is the random polarization.
+- `PolarizationParallel()` describes a parallel polarization.
+- `PolarizationPerpendicular()` describes a perpendicular polarization. 
+- `PolarizationRandom()` describes a random polarization.
 """
 abstract type Polarization end
 
@@ -45,7 +45,7 @@ is taken into account.
 - `R_inner` is the inner radius of the glass vial.
 - `n_vial` is the refractive index of the glass vial.
 - `n_resin` is the refractive index of the resin.
-- `polarization` is the polarization of the light.  
+- `polarization=PolarizationRandom()` is the polarization of the light. See [`Polarization`](@ref) for the options. 
 """
 @with_kw struct VialRayOptics{T, ToN, A, P} <: PropagationScheme
     angles::A
