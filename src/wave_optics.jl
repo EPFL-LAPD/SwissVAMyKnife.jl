@@ -1,4 +1,4 @@
-export WaveOptics, WaveOpticsPhase
+export WaveOptics
 
 """
    WaveOptics(;z, λ, L, μ=nothing, angles)
@@ -72,50 +72,6 @@ function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::Loss
     return patterns_perm, printed_perm, res
 end
 
-
-function optimize_patterns(target, ps::WaveOpticsPhase, op::GradientBased, loss::LossThreshold)
-    angles = ps.angles
-    μ = ps.μ
-    L = ps.L
-    λ = ps.λ
-    z = ps.z
-
-
-    patterns_0 = similar(target, (size(target)[1:2]..., size(angles, 1)))
-    x = similar(patterns_0, (size(patterns_0, 1)))
-    x .= fftpos(ps.L, size(x,1), CenterFT)
-    mask = reshape((x.^2 .+ x'.^2) .<= ps.L^2, (1, size(x,1), size(x,1)))
-
-
-    AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=true)
-    AS_abs2 = let target=target, AS=AS, langles=length(angles), p=plan_fft(0im .+ similar(patterns_0[:,:, 1]), (1,2))
-            function a(x)
-                abs2.(AS(fftshift(p * exp.(1im .* x)))[1]) ./ 60_000 ./ langles
-            end
-    end
-
-
-    fwd2 = let AS_abs2=AS_abs2, angles=angles
-        function fwd2(x)
-            intensity = fwd_wave(x, AS_abs2, angles)
-            return intensity 
-        end
-    end
-    
-    target_permuted = permutedims(target, (3, 2, 1))
-    fg! = make_fg!(fwd2, target_permuted, loss)
-    
-    # initialize with almost 0
-    @warn "initialize with random phases"
-    patterns_0 .= 2π .* typeof(patterns_0)(rand(size(patterns_0)...))#0.00f0
-    res = Optim.optimize(Optim.only_fg!(fg!), patterns_0, op.optimizer, op.options)
-
-    printed = fwd2(res.minimizer)
-    patterns = (res.minimizer)
-    printed_perm = permutedims(printed, (3, 2, 1));
-    patterns_perm = permutedims(patterns, (1, 3, 2));
-    return patterns_perm, printed_perm, res
-end
 
 
 
