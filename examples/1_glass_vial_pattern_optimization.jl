@@ -220,7 +220,7 @@ geometry_vial = VialRayOptics(
 
 # ╔═╡ 675764cb-721a-4b89-92c4-8a1ab7f5867f
 @mytime patterns_vial, printed_intensity_vial, optim_res_vial = optimize_patterns(togoc(target), geometry_vial, 
-								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=8, store_trace=true))					
+								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=100, store_trace=true))					
 								, loss)
 
 # ╔═╡ 9ddd098d-2d78-4de8-a322-40a2463adcda
@@ -260,7 +260,7 @@ We deactive the cell by default. However of the (...) next to the cell and click
 # ╔═╡ 8824fb56-0fbf-4cba-9aea-6449627923f2
 geometry_vial2 = VialRayOptics(
 	angles=range(0, 2π, 300),
-	μ=2/256,
+	μ=2/128,
 	R_outer=8e-3,
 	R_inner=7.5e-3,
 	n_vial=1.5,
@@ -269,7 +269,7 @@ geometry_vial2 = VialRayOptics(
 
 # ╔═╡ 0a655d51-e3b6-413b-83de-9781974242a2
 begin
-	KK = 130
+	KK = 128
 	target_3D = box(Float32, (KK, KK, KK), (80, 80, 100)) .- 
 	box(Float32, (KK, KK, KK), (60, 50, 80));
 	target_3D = Float32.(Bool.(target_3D) .|| (rr2(size(target_3D)) .< 30^2))
@@ -282,12 +282,9 @@ md"z slide value $(@bind slice PlutoUI.Slider(axes(target_3D, 3), show_value=tru
 simshow(target_3D[:, :, slice])
 
 # ╔═╡ d6a59254-bffe-4116-9335-8884eb44556f
-# ╠═╡ disabled = true
-#=╠═╡
-@mytime patterns_3D, printed_intensity_3D, optim_res_3D = optimize_patterns(togoc(target_3D), geometry_vial, 
+@mytime patterns_3D, printed_intensity_3D, optim_res_3D = optimize_patterns(togoc(target_3D), geometry_vial2, 
 								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=20, store_trace=true))					
 								, loss)
-  ╠═╡ =#
 
 # ╔═╡ 6009b601-6988-4be8-a519-7c59660c73ab
 optim_res_3D

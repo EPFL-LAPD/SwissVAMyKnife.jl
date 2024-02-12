@@ -8,17 +8,9 @@ export WaveOptics, WaveOpticsPhase
 * `λ`: wavelength in the medium. So divide by the refractive index!
 * `L`: The side length of the array. You should satisfy `L ≈ abs(z[begin]) + abs(z[end])`
 * `μ`: Absorption coefficient.
-* `angles`: the angles we illumate from. 
+* `angles`: the angles we illuminate the sample. Should be `Vector` or range. 
 """
 @with_kw struct WaveOptics{T2, T, A, ToN} <: PropagationScheme
-    z::T2
-    λ::T
-    L::T
-    μ::ToN=nothing
-    angles::A
-end
-
-@with_kw struct WaveOpticsPhase{T2, T, A, ToN} <: PropagationScheme
     z::T2
     λ::T
     L::T
