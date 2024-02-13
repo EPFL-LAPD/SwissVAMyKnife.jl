@@ -143,9 +143,10 @@ end
 
 
 function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics) where T
-    pat0 = radon(target, ps.angles, μ=ps.μ)
-    fwd = let angles=ps.angles, μ=ps.μ
-        fwd(x) = backproject(NNlib.relu.(x) ./ length(angles), angles; μ)
+    geometry = RadonParallelCircle(size(target, 1), -(size(target,1) -1)÷2:1:(size(target,1) -1)÷2)
+    pat0 = radon(target, ps.angles, μ=ps.μ, geometry=geometry)
+    fwd = let angles=ps.angles, μ=ps.μ, geometry=geometry
+        fwd(x) = backproject(NNlib.relu.(x) ./ length(angles), angles; μ, geometry)
     end
     return fwd, pat0
 end
