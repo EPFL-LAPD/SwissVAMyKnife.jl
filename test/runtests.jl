@@ -82,3 +82,11 @@ end
     @test SwissVAMyKnife.distort_rays_vial(-100.0, 200.0, 180.0, 1.37, 1.37 * 1.37)[1] ≈ (-102.26082855257938, -0.5207635370929073)[1]
     @test SwissVAMyKnife.distort_rays_vial(-100.0, 200.0, 180.0, 1.37, 1.37 * 1.37)[2] ≈ (-102.26082855257938, -0.5207635370929073)[2]
 end
+
+
+@testset "Test IoU" begin
+    @test  calculate_IoU([1,0], [1,0]) ≈ 1.0
+    @test  calculate_IoU([1,0], [0,1]) ≈ 0.0
+    @test  calculate_IoU([1,0], [1,1]) ≈ 0.5
+    @test  calculate_IoU([1,0], [0,0]) ≈ 0.0
+end

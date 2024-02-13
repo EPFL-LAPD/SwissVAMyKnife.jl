@@ -1,4 +1,18 @@
-export printing_errors, plot_intensity_histogram, save_patterns
+export printing_errors, plot_intensity_histogram, save_patterns, calculate_IoU
+
+"""
+    calculate_IoU(target, printed)
+
+Calculate the Intersection over Union (IoU) of the `printed` object compared with the `target` object.
+
+"""
+function calculate_IoU(target, printed)
+    intersection = sum((target .> 0) .& (printed .> 0))
+    union = sum((target .> 0) .| (printed .> 0))
+    return intersection / union
+end
+
+
 
 """
     printing_errors(target, printed, thresholds)
