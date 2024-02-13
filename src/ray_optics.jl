@@ -163,7 +163,7 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics) where
     # return both the entrance intersection and exit intersection
     heights = distort_rays_vial.(in_height,
 	                radius_pixel,
-                    radius_pixel / T(ps.R_outer * ps.R_inner),
+                    radius_pixel / T(ps.R_outer) * T(ps.R_inner),
                     T(ps.n_vial),
                     T(ps.n_resin))
 
