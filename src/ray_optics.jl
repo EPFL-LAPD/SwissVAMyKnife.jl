@@ -156,9 +156,9 @@ end
 function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics) where T
 
     N = iseven(size(target, 1)) ? T(size(target, 1) - 1) : T(size(target, 1))
-    radius_pixel = T(N ÷ 2)
+    radius_pixel = T(N / 2)
     in_height = range(-N÷2, N÷2, Int(N))
-    in_height_si_units = in_height ./ (radius_pixel .+ T(0.1)) .* T(ps.R_outer)
+    in_height_si_units = in_height ./ (radius_pixel) .* T(ps.R_outer)
     # find the intersection with the glass vials
     # return both the entrance intersection and exit intersection
     heights = distort_rays_vial.(in_height,
