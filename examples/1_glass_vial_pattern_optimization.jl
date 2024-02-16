@@ -204,6 +204,7 @@ Luckily, you just have to specify the following parameters for the geometry:
  - So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
  - `R_outer` is the outer radius of the glass vial.
  - `R_inner` is the inner radius of the glass vial.
+ - `DMD_diameter` is the diameter of the DMD along the vial radius. So this is not the height along the rotation axis!
  - `n_vial` is the refractive index of the glass vial.
  - `n_resin` is the refractive index of the resin.
 """
@@ -212,16 +213,20 @@ Luckily, you just have to specify the following parameters for the geometry:
 geometry_vial = VialRayOptics(
 	angles=angles,
 	μ=2/256,
-	R_outer=8e-3,
-	R_inner=7.5e-3,
-	n_vial=1.5,
-	n_resin=1.48
+	R_outer=(16.60e-3) / 2,
+	R_inner=(15.2e-3) / 2,
+	DMD_diameter=14.6e-3,
+	n_vial=1.47,
+	n_resin=1.4849
 )
 
 # ╔═╡ 675764cb-721a-4b89-92c4-8a1ab7f5867f
 @mytime patterns_vial, printed_intensity_vial, optim_res_vial = optimize_patterns(togoc(target), geometry_vial, 
 								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=100, store_trace=true))					
 								, loss)
+
+# ╔═╡ 71b479a0-29fc-4411-a02d-096427f2a631
+size(patterns_vial)
 
 # ╔═╡ 9ddd098d-2d78-4de8-a322-40a2463adcda
 plot_intensity_histogram(target, printed_intensity_vial, (0.65, 0.75))
@@ -248,8 +253,11 @@ simshow(Array(patterns_vial[:,:,1]), cmap=:turbo)
 # ╔═╡ 7de5d398-20d6-44e2-b2eb-3007111e146f
 sum(patterns_vial) / (maximum(patterns_vial) * length(patterns_vial))
 
+# ╔═╡ 006aa5f6-8008-455a-a2a6-54eeb0c097bf
+
+
 # ╔═╡ a7cafba6-849a-4eb8-9709-a76cb98e9879
-md"# 6. Let's do a bigger 3D object!
+md"# 7. Let's do a bigger 3D object!
 Be a little patient, this might take 10 seconds on a GPU.
 On a CPU much longer accordingly, some minutes.
 
@@ -260,11 +268,11 @@ We deactive the cell by default. However of the (...) next to the cell and click
 # ╔═╡ 8824fb56-0fbf-4cba-9aea-6449627923f2
 geometry_vial2 = VialRayOptics(
 	angles=range(0, 2π, 300),
-	μ=2/128,
-	R_outer=8e-3,
-	R_inner=7.5e-3,
-	n_vial=1.5,
-	n_resin=1.48
+	μ=2/256,
+	R_outer=(16.60e-3) / 2,
+	R_inner=(15.2e-3) / 2,
+	n_vial=1.47,
+	n_resin=1.4849
 )
 
 # ╔═╡ 0a655d51-e3b6-413b-83de-9781974242a2
@@ -290,7 +298,7 @@ simshow(target_3D[:, :, slice])
 optim_res_3D
 
 # ╔═╡ fa45b520-18a8-4465-b642-a1c08de48e20
-@bind thresh4 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.5)
+md"threshold value=$(@bind thresh4 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.5))"
 
 # ╔═╡ 10cc0e79-5d5b-43cf-afb8-ad21875d6d97
 md"z slider value $(@bind slice2 PlutoUI.Slider(axes(target_3D, 3), show_value=true, default=0.5))"
@@ -350,15 +358,17 @@ simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo, set_one=true)
 # ╠═17621d91-1f93-4fcf-abf1-5e97463a0bdf
 # ╠═05c6a38e-a87d-46da-acb6-33b393369f4c
 # ╟─f940c2a6-ebc2-4dca-986c-fe25bfa9e4f0
-# ╠═f9a82207-6841-44c9-9aec-e8da3de8e0b0
+# ╟─f9a82207-6841-44c9-9aec-e8da3de8e0b0
+# ╠═71b479a0-29fc-4411-a02d-096427f2a631
 # ╠═675764cb-721a-4b89-92c4-8a1ab7f5867f
 # ╠═9ddd098d-2d78-4de8-a322-40a2463adcda
 # ╠═d1f33cd0-0927-417e-a024-6a8c76da1fb9
 # ╠═d56eb3ab-4698-4ee4-aae1-461b964b778c
-# ╠═b6a6237f-b03f-402d-9693-f00044e3539e
+# ╟─b6a6237f-b03f-402d-9693-f00044e3539e
 # ╟─eda29eed-507c-4f55-b1e6-590c9616db8e
 # ╠═fc239b37-dc88-48cd-9479-99074d96ece5
 # ╠═7de5d398-20d6-44e2-b2eb-3007111e146f
+# ╠═006aa5f6-8008-455a-a2a6-54eeb0c097bf
 # ╟─a7cafba6-849a-4eb8-9709-a76cb98e9879
 # ╠═8824fb56-0fbf-4cba-9aea-6449627923f2
 # ╠═0a655d51-e3b6-413b-83de-9781974242a2

@@ -131,10 +131,13 @@ md"The intersection over union is: $(round(calculate_IoU(togoc(target), printed_
 md"Choose threshold for image: $(@bind thresh4 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.7))"
 
 # ╔═╡ 0dac21c5-5576-499c-8cb8-e3f1e7c7f39c
-md"z slice $(@bind slice2 PlutoUI.Slider(axes(target, 3), show_value=true, default=77))"
+md"z slice $(@bind slice2 PlutoUI.Slider(axes(target, 3), show_value=true, default=77))
+
+Intensity distribution ----------- after threshold -------------------- target -------------------------------difference
+"
 
 # ╔═╡ b1690362-a23d-4047-a9c4-18fcc625ef3e
-[simshow(Array(printed_intensity[:, :, slice2]), set_one=true, cmap=:turbo) simshow(ones((size(target, 1), 5))) simshow(thresh4 .< Array(printed_intensity[:, :, slice2])) simshow(ones((size(target, 1), 5))) simshow(Array(target[:, :, slice2]))  simshow(ones((size(target, 1), 5))) simshow(Array(togoc(target)[:, :, slice2] .!= (thresh4 .< (printed_intensity[:, :, slice2]))))]
+[simshow(Array(printed_intensity[:, :, slice2]), set_one=false, cmap=:turbo) simshow(ones((size(target, 1), 5))) simshow(thresh4 .< Array(printed_intensity[:, :, slice2])) simshow(ones((size(target, 1), 5))) simshow(Array(target[:, :, slice2]))  simshow(ones((size(target, 1), 5))) simshow(Array(togoc(target)[:, :, slice2] .!= (thresh4 .< (printed_intensity[:, :, slice2]))))]
 
 # ╔═╡ d7de379b-601f-4bd5-b26d-45d424811aa2
 plot_intensity_histogram(target, printed_intensity, (0.65, 0.75))
