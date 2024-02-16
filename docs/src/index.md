@@ -1,5 +1,5 @@
 # SwissVAMyKnife.jl
-[![CI](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/actions/workflows/CI.yml) [![codecov](https://codecov.io/gh/EPFL-LAPD/SwissVAMyKnife.jl/graph/badge.svg?token=JZYHT3P3B7)](https://codecov.io/gh/EPFL-LAPD/SwissVAMyKnife.jl) [![Documentation for stable version](https://img.shields.io/badge/docs-stable-blue.svg)](https://roflmaostc.github.io/SwissVAMyKnife.jl/stable) [![Documentation for development version](https://img.shields.io/badge/docs-main-blue.svg)](https://roflmaostc.github.io/SwissVAMyKnife.jl/dev)
+[![codecov](https://codecov.io/gh/EPFL-LAPD/SwissVAMyKnife.jl/graph/badge.svg?token=JZYHT3P3B7)](https://codecov.io/gh/EPFL-LAPD/SwissVAMyKnife.jl) [![Documentation for stable version](https://img.shields.io/badge/docs-stable-blue.svg)](https://roflmaostc.github.io/SwissVAMyKnife.jl/stable) [![Documentation for development version](https://img.shields.io/badge/docs-main-blue.svg)](https://roflmaostc.github.io/SwissVAMyKnife.jl/dev)
 
 [Tomographic Volumetric Additive Manufacturing](https://www.nature.com/articles/s41467-020-14630-4) is a novel 3D printing technique
 which is based on a tomographic principle.
@@ -14,12 +14,25 @@ This package is developed in [Julia Lang](https://julialang.org/) and features C
 
 It runs on Windows, Linux and macOS!
 
+```@raw html
+<img src="assets/principle.png" alt="" width="500"/>
+```
+The general principle behind TVAM. a) a set of 2D projection patterns is
+propagated into space. b) shows how a slice of the pattern propagates through the
+volume and c) how the incoherent sum results in a total energy dose. d) the object
+polymerizes if it reaches an energy threshold. e) polymerization threshold results in a
+printed slice. f) is the intensity histogram of b). g) is the 3D view of the Benchy boat.
+h) is the general setup.
 
 # Features
 * 3D parallel Radon transform for ray optical simulation 
 * rigorous simulation of absorption and vial refraction
 * CUDA acceleration hence high performance
 * 3D coherent wave optical optimization (see this [paper](https://arxiv.org/abs/2402.06283) for details and limitations). Note this has been only theoretical demonstrated and experimentally not validated.
+
+
+
+![](../assets/principle.png)
 
 
 # Installation
