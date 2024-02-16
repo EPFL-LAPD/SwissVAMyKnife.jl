@@ -13,17 +13,11 @@ end
 
 function load_example_target(name)
     if name == "3DBenchy_180"
-        return JLD2.load(joinpath(artifact"name", "benchy_100.jld2"), "target")
+        return JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "benchy_100.jld2"), "target")
     else
         throw(ArgumentError("Unknown example target $name"))
     end
 end
-
-
-
-
-
-
 
 
 

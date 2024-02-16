@@ -90,3 +90,8 @@ end
     @test  calculate_IoU([1,0], [1,1]) ≈ 0.5
     @test  calculate_IoU([1,0], [0,0]) ≈ 0.0
 end
+
+
+@testset "test artifacts" begin
+    @test size(load_example_target("3DBenchy_180")) == (180, 180, 180)
+end
