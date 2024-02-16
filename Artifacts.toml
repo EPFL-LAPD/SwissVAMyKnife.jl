@@ -4,3 +4,10 @@ git-tree-sha1 = "203f5389e5d3a6aa0d0dea0659ea374f30c6a52b"
     [[3DBenchy_180.download]]
     url = "https://github.com/EPFL-LAPD/PrintingTargets/raw/main/3DBenchy_180.tar.gz"
     sha256 = "35f38b42c1c47c81f1c70034407dd2be83b241a7e7e8a81d431b4855cc8a2f97"
+
+[3DBenchy_550]
+git-tree-sha1 = "183110988f70ed1d9711cba2d51f00b2ea60445b"
+
+    [[3DBenchy_550.download]]
+    url = "https://github.com/EPFL-LAPD/PrintingTargets/raw/main/3DBenchy_550.tar.gz"
+    sha256 = "84365d8e385d7411ee4b1f1853fe27e9c5beed95e1e99316bbea78e8671182de"

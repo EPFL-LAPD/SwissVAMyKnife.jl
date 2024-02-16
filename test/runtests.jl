@@ -94,4 +94,5 @@ end
 
 @testset "test artifacts" begin
     @test size(load_example_target("3DBenchy_180")) == (180, 180, 180)
+    @test size(load_example_target("3DBenchy_550")) == (550, 550, 550) 
 end

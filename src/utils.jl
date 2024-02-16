@@ -10,17 +10,56 @@ function interpolate_patterns(patterns; N_angles, Nx, Ny)
 
 end
 
+"""
+    load_example_target(name)
 
+Load the example target `name` from the artifacts as voxelized array.
+
+Possible targets are:
+- `"3DBenchy_180"`
+- `"3DBenchy_550"`
+"""
 function load_example_target(name)
+    artifacts_toml = abspath(joinpath(@__DIR__, "..", "Artifacts.toml"))
+    ensure_artifact_installed(name, artifacts_toml)
+    image_dir = artifact_path(artifact_hash(name, artifacts_toml))
+
     if name == "3DBenchy_180"
         return JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "benchy_100.jld2"), "target")
+    elseif name == "3DBenchy_550"
+        return JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "3D_benchy_550.jld2"), "target")
     else
         throw(ArgumentError("Unknown example target $name"))
     end
 end
 
 
+"""
+    load_image_stack(sz, sz_file, path)
 
+Load the image stack from the path `path` and resize it to `sz`.
+
+Example:
+`sz=(180, 180, 180)`, `sz_file=`(100, 100, 30) and  and `path=`"path/to/images"
+This means that there is 30 `png` images in the folder `path` and each image has the size `100x100`.
+The function will insert them into an array full of zeos of size `180x180` and stack them together to a 3D array.
+
+"""
+function load_image_stack(sz, sz_file, path)
+    error("Not implemented yet")
+    return 
+
+	target = zeros(Float32, sz)
+	#@show size(load(joinpath(path, string("slice_", string(1, pad=3) ,".png"))))
+	
+	for i in 0:sz_file[1]-1
+		target[:, :, 40 + i+1] .= select_region(Gray.(load(joinpath(path, string("boat_", string(i, pad=3) ,".png")))), new_size=(sz))
+	end
+
+	target2 = select_region(target, new_size=sz)
+	target2 = permutedims(target2, (3,1,2))[end:-1:begin, :, :]
+	return target2
+end
 
 
 """

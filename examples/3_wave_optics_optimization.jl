@@ -32,9 +32,6 @@ using ImageShow, ImageIO, PlutoUI, IndexFunArrays, Optim, RadonKA, FileIO, Color
 # ╔═╡ 50bb6567-4fea-4794-8a5d-2c519e065296
 using CUDA
 
-# ╔═╡ 86b8c061-2f0e-4e4d-9d5e-7694e152813a
-using NDTools
-
 # ╔═╡ bf0c719f-4fa7-4f58-b031-e535813acedf
 md"""# Supplemental simulations
 
@@ -98,29 +95,10 @@ Let's use the `LossThreshold` to achieve this:
 loss = LossThreshold(thresholds=(0.65, 0.75))
 
 # ╔═╡ 7f812aa1-7fae-40fd-8601-a5d8c19a5e49
-md"# 2. Target"
+md"# 2. Target - 3D Benchy"
 
-# ╔═╡ 1931aa0f-966e-4ca0-b6d6-2ff6995ff8cb
-md"# 1. Load Benchy"
-
-# ╔═╡ d708c3a1-6e59-4001-a93a-69442466a9d5
-function load_benchy(sz, sz_file, path)
-	target = zeros(Float32, sz)
-	#@show size(load(joinpath(path, string("slice_", string(1, pad=3) ,".png"))))
-	
-	for i in 0:sz_file[1]-1
-		target[:, :, 40 + i+1] .= select_region(Gray.(load(joinpath(path, string("boat_", string(i, pad=3) ,".png")))), new_size=(sz))
-	end
-
-	#target2 = zeros(Float32, sz)
-	#WaveOpticsPropagation.set_center!(target2, target
-	target2 = select_region(target, new_size=sz)
-	target2 = permutedims(target2, (3,1,2))[end:-1:begin, :, :]
-	return togoc(target2)
-end
-
-# ╔═╡ 70375fb2-a3f9-482d-b637-7b5867b1e2d0
-target = permutedims(load_benchy((180, 180, 180), (100, 100, 100), "/home/felix/Downloads/benchy/files/output_100/"), (1,2,3));
+# ╔═╡ 908d2d2f-379d-4320-8ce0-2a2efd63a413
+target = togoc(load_example_target("3DBenchy_180"));
 
 # ╔═╡ 0594a1b3-cac0-4829-a801-78e2420022eb
 md"z slide value $(@bind slice PlutoUI.Slider(axes(target, 3), show_value=true, default=0.5))"
@@ -151,12 +129,11 @@ waveoptics = WaveOptics(
 
 # ╔═╡ 24fbd950-59ba-457d-9451-094a051d1268
 md"# Optimize
-This takes around ~30s on a GPU to optimize
-
+This takes around ~1400s on a CUDA RTX 3060 to optimize
 "
 
 # ╔═╡ 0292b640-4a4f-4122-9fff-c3254f233485
-optimizer = GradientBased(optimizer=Optim.LBFGS(), 		options=Optim.Options(iterations=20, store_trace=true))
+optimizer = GradientBased(optimizer=Optim.LBFGS(), 		options=Optim.Options(iterations=30, store_trace=true))
 
 # ╔═╡ ee025d44-4b1d-4aff-8b69-6b30b9bbcc2a
 @mytime patterns, printed, res = optimize_patterns(togoc(target), waveoptics, optimizer, loss)
@@ -171,7 +148,7 @@ md"Threshold value=$(@bind thresh4 PlutoUI.Slider(0:0.01:1, show_value=true, def
 md"z slider value $(@bind slice2 PlutoUI.Slider(axes(target, 3), show_value=true, default=0.5))"
 
 # ╔═╡ 6e67afcc-597d-4c18-a351-e24c5b732f2d
-[simshow(Array(printed[:, :, slice2]), set_one=false) simshow(ones((size(target, 1), 5))) simshow(thresh4 .< Array(printed[:, :, slice2])) simshow(ones((size(target, 1), 5))) simshow(target[:, :, slice2])]
+[simshow(Array(printed[:, :, slice2]), set_one=false) simshow(ones((size(target, 1), 5))) simshow(thresh4 .< Array(printed[:, :, slice2])) simshow(ones((size(target, 1), 5))) simshow(Array(target[:, :, slice2]))]
 
 # ╔═╡ 03270673-3fea-49d1-a551-2c08883d76f8
 plot_intensity_histogram(target, printed, (0.65, 0.75))
@@ -184,7 +161,7 @@ simshow(Array(patterns[:,angle,:]), cmap=:turbo, set_one=true)
 
 # ╔═╡ Cell order:
 # ╟─bf0c719f-4fa7-4f58-b031-e535813acedf
-# ╠═ba186bc1-2d3d-4422-92b9-98e2657e2d47
+# ╟─ba186bc1-2d3d-4422-92b9-98e2657e2d47
 # ╠═874ffaea-c7ae-11ee-11c6-a7ddbc5bf852
 # ╠═5d5d3113-e8d6-40a9-82d6-1d4f52e10d47
 # ╠═20587240-34ff-4e44-b481-5c631db90f9a
@@ -198,10 +175,7 @@ simshow(Array(patterns[:,angle,:]), cmap=:turbo, set_one=true)
 # ╟─0cae8621-9b65-4506-b604-72719293d64d
 # ╠═ed6b2393-0ebb-4a24-b872-7424723e1f98
 # ╟─7f812aa1-7fae-40fd-8601-a5d8c19a5e49
-# ╟─1931aa0f-966e-4ca0-b6d6-2ff6995ff8cb
-# ╠═86b8c061-2f0e-4e4d-9d5e-7694e152813a
-# ╠═d708c3a1-6e59-4001-a93a-69442466a9d5
-# ╠═70375fb2-a3f9-482d-b637-7b5867b1e2d0
+# ╠═908d2d2f-379d-4320-8ce0-2a2efd63a413
 # ╟─0594a1b3-cac0-4829-a801-78e2420022eb
 # ╠═cc95eb12-e948-44ba-8165-edf6886efb37
 # ╟─ceb4233f-efaa-4e78-922d-92acf6625ff3
@@ -215,7 +189,7 @@ simshow(Array(patterns[:,angle,:]), cmap=:turbo, set_one=true)
 # ╠═01bb81c2-ab87-47c3-9e0c-6196f6c770f6
 # ╟─b83de72c-8e0d-453f-8324-9745cf768d6c
 # ╟─605ba331-a480-492f-98aa-402155d33ebf
-# ╠═6e67afcc-597d-4c18-a351-e24c5b732f2d
+# ╟─6e67afcc-597d-4c18-a351-e24c5b732f2d
 # ╠═03270673-3fea-49d1-a551-2c08883d76f8
-# ╠═c56e0332-7abf-4041-8360-ba4bd09f2082
+# ╟─c56e0332-7abf-4041-8360-ba4bd09f2082
 # ╠═082dcba1-b2b9-433e-941f-1c96ab63a7a9

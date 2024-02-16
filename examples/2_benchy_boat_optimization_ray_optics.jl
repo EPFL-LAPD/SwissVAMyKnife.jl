@@ -61,6 +61,9 @@ On the first run, Julia is going to install some packages automatically. So star
 No worries, any future runs will be much faster to start!
 "
 
+# ╔═╡ 1f595779-173a-4892-bbfc-0435dcb46434
+Pkg.resolve()
+
 # ╔═╡ d8163acd-be6c-4176-89a1-a4a7643441f6
 TableOfContents()
 
@@ -84,24 +87,8 @@ togoc(x) = use_CUDA[] ? CuArray(x) : x
 # ╔═╡ c1240545-a674-4e3c-8386-0b6cb4591fc6
 md"# 1. Load Benchy"
 
-# ╔═╡ 3665c1e2-ae84-47a9-89db-7f5dc6657e4c
-function load_benchy(sz, sz_file, path)
-	target = zeros(Float32, sz)
-	#@show size(load(joinpath(path, string("slice_", string(1, pad=3) ,".png"))))
-	
-	for i in 0:sz_file[1]-1
-		target[:, :, 40 + i+1] .= select_region(Gray.(load(joinpath(path, string("boat_", string(i, pad=3) ,".png")))), new_size=(sz))
-	end
-
-	#target2 = zeros(Float32, sz)
-	#WaveOpticsPropagation.set_center!(target2, target
-	target2 = select_region(target, new_size=sz)
-	target2 = permutedims(target2, (3,1,2))[end:-1:begin, :, :]
-	return togoc(target2)
-end
-
 # ╔═╡ 246b8900-a4dd-4caf-8f34-9d868d6127b2
-target = permutedims(load_benchy((180, 180, 180), (100, 100, 100), "/home/felix/Downloads/benchy/files/output_100/"), (1,2,3));
+target = load_example_target("3DBenchy_180");
 
 # ╔═╡ 02c93620-2cf6-4446-a280-d4a7934f0ecd
 md"z slide value $(@bind slice PlutoUI.Slider(axes(target, 3), show_value=true, default=77))"
@@ -138,7 +125,7 @@ optim_res
 md"# 4. Inspect"
 
 # ╔═╡ 49952e37-7f07-4719-b77a-971a521e155a
-md"The intersection over union is: $(round(calculate_IoU(target, printed_intensity .> 0.7), digits=3))"
+md"The intersection over union is: $(round(calculate_IoU(togoc(target), printed_intensity .> 0.7), digits=3))"
 
 # ╔═╡ da8a4c5f-7439-498b-b4c2-678987b45f2c
 md"Choose threshold for image: $(@bind thresh4 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.7))"
@@ -147,7 +134,7 @@ md"Choose threshold for image: $(@bind thresh4 PlutoUI.Slider(0:0.01:1, show_val
 md"z slice $(@bind slice2 PlutoUI.Slider(axes(target, 3), show_value=true, default=77))"
 
 # ╔═╡ b1690362-a23d-4047-a9c4-18fcc625ef3e
-[simshow(Array(printed_intensity[:, :, slice2]), set_one=true, cmap=:turbo) simshow(ones((size(target, 1), 5))) simshow(thresh4 .< Array(printed_intensity[:, :, slice2])) simshow(ones((size(target, 1), 5))) simshow(Array(target[:, :, slice2]))  simshow(ones((size(target, 1), 5))) simshow(Array(target[:, :, slice2] .!= (thresh4 .< (printed_intensity[:, :, slice2]))))]
+[simshow(Array(printed_intensity[:, :, slice2]), set_one=true, cmap=:turbo) simshow(ones((size(target, 1), 5))) simshow(thresh4 .< Array(printed_intensity[:, :, slice2])) simshow(ones((size(target, 1), 5))) simshow(Array(target[:, :, slice2]))  simshow(ones((size(target, 1), 5))) simshow(Array(togoc(target)[:, :, slice2] .!= (thresh4 .< (printed_intensity[:, :, slice2]))))]
 
 # ╔═╡ d7de379b-601f-4bd5-b26d-45d424811aa2
 plot_intensity_histogram(target, printed_intensity, (0.65, 0.75))
@@ -203,7 +190,7 @@ size(patterns_reshape)
 out_wave = fwd2(sqrt.(patterns_reshape));
 
 # ╔═╡ d4f528b2-d007-40dd-ab16-7a6f3369a3cf
-iou = round(calculate_IoU(permutedims(target, (3,1,2)), permutedims(out_wave, (1,3,2)) .> 0.7), digits=3)
+iou = round(calculate_IoU(permutedims(togoc(target), (3,1,2)), permutedims(out_wave, (1,3,2)) .> 0.7), digits=3)
 
 # ╔═╡ f89de548-d445-4452-a80b-a714cf30ea42
 md"The intersection over union is: $iou"
@@ -218,6 +205,7 @@ md"The intersection over union is: $iou"
 # ╟─7279f1d1-6423-44ae-b071-7c2847026ca9
 # ╟─1f8a2f2b-e006-43e9-8fc8-2df2c72d8bc6
 # ╠═022dde50-b50c-4198-b5d2-50cb95562a3f
+# ╠═1f595779-173a-4892-bbfc-0435dcb46434
 # ╠═d98ea233-c3dc-4e9e-b12d-15a7b687e8a8
 # ╠═7de2dce2-0faa-4b5a-a23d-3929f03413cd
 # ╠═d8163acd-be6c-4176-89a1-a4a7643441f6
@@ -228,7 +216,6 @@ md"The intersection over union is: $iou"
 # ╠═2794d1bf-dea1-494a-917d-7d675d8bc8a3
 # ╟─c1240545-a674-4e3c-8386-0b6cb4591fc6
 # ╠═0be4ad80-2433-4f91-866a-b8cbb2a7458a
-# ╠═3665c1e2-ae84-47a9-89db-7f5dc6657e4c
 # ╠═246b8900-a4dd-4caf-8f34-9d868d6127b2
 # ╟─02c93620-2cf6-4446-a280-d4a7934f0ecd
 # ╠═971f7c2f-415f-4e73-aaea-acda355e2f5a
@@ -238,7 +225,7 @@ md"The intersection over union is: $iou"
 # ╠═93cebf3f-389b-4fde-8d13-af3e1165ad9c
 # ╠═2ffbef8c-066d-49b6-8a29-1ef710099029
 # ╟─c0529850-c323-4c72-bab1-ec414d3ad425
-# ╟─792e4c29-7f0c-4d9b-833b-8341702e472e
+# ╠═792e4c29-7f0c-4d9b-833b-8341702e472e
 # ╠═7c9f675d-3698-459d-93fa-d8e297a7ffa5
 # ╟─e94fb1d2-06c3-4f45-91ed-411fe8bd033f
 # ╟─49952e37-7f07-4719-b77a-971a521e155a
