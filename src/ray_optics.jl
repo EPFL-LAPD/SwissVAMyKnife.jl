@@ -154,8 +154,6 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics) where
     radius_pixel = T(N / 2)
 
     in_height_N = T(round(Int, (N  * ps.DMD_diameter / (2 * ps.R_outer))÷2))
-    @show in_height_N
-    @show N
     in_height = range(-in_height_N, in_height_N, Int(2 * in_height_N + 1))
     in_height_si_units = in_height ./ (radius_pixel) .* T(ps.R_outer)
     # find the intersection with the glass vials
