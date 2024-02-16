@@ -46,6 +46,13 @@ In this case we optimize the [3D Benchy](https://3dbenchy.com/) as a printing ta
 
 
 ## Specifying System Parameters
+For the optimization we need to include all system parameters such as the refractive index of vial and resin and the geometry
+of the vial. Further, we need to input the size of the DMD with respect to the glass vial.
+If the DMD is smaller than the glass vial, we output patterns which are smaller than the simulated volume.
+If the DMD is larger than the glass vial, we simulate patterns which are exactly the size of the glass vial.
+It is your responsibility to pad the resulting images with zeros such that they fit to your setup.
+Without index matching bath this is important since a wrong scaling will ultimate result in a low quality print.
+
 
 
 ## Specifying Optimization Parameters
