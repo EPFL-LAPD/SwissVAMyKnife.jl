@@ -56,6 +56,7 @@ This is equivalent to an inverse (attenuated) Radon transform as the forward mod
 - So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
 - `R_outer` is the outer radius of the glass vial.
 - `R_inner` is the inner radius of the glass vial.
+- `DMD_diameter` is the diameter of the DMD along the vial radius. So this is not the height along the rotation axis!
 - `n_vial` is the refractive index of the glass vial.
 - `n_resin` is the refractive index of the resin.
 - `polarization=PolarizationRandom()` is the polarization of the light. See [`Polarization`](@ref) for the options. 
@@ -67,18 +68,11 @@ julia> VialRayOptics(angles=range(0,2π, 501)[begin:end-1],
                      μ=nothing,
                      R_outer=6e-3,
                      R_inner=5.5e-3,
+                     DMD_diameter=2 * R_outer,
                      n_vial=1.47,
                      n_resin=1.48,
                      polarization=PolarizationRandom()
                      )
-VialRayOptics{Float64, Nothing, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, PolarizationRandom}
-  angles: StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}
-  μ: Nothing nothing
-  R_outer: Float64 0.006
-  R_inner: Float64 0.0055
-  n_vial: Float64 1.47
-  n_resin: Float64 1.48
-  polarization: PolarizationRandom PolarizationRandom()
 ```
 """
 @with_kw struct VialRayOptics{T, ToN, A, P} <: PropagationScheme
@@ -86,6 +80,7 @@ VialRayOptics{Float64, Nothing, StepRangeLen{Float64, Base.TwicePrecision{Float6
     μ::ToN=nothing
     R_outer::T=8e-3
     R_inner::T=7.6e-3
+    DMD_diameter::T=2 * R_outer
     n_vial::T
     n_resin::T
     polarization::P=PolarizationRandom()
@@ -157,7 +152,11 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics) where
 
     N = iseven(size(target, 1)) ? T(size(target, 1) - 1) : T(size(target, 1))
     radius_pixel = T(N / 2)
-    in_height = range(-N÷2, N÷2, Int(N))
+
+    in_height_N = T(round(Int, (N  * ps.DMD_diameter / (2 * ps.R_outer))÷2))
+    @show in_height_N
+    @show N
+    in_height = range(-in_height_N, in_height_N, Int(2 * in_height_N + 1))
     in_height_si_units = in_height ./ (radius_pixel) .* T(ps.R_outer)
     # find the intersection with the glass vials
     # return both the entrance intersection and exit intersection
