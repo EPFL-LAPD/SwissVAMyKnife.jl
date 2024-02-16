@@ -1,6 +1,17 @@
 export printing_errors, plot_intensity_histogram, save_patterns, calculate_IoU
 
 """
+    interpolate_patterns(patterns, N_angles)
+
+"""
+function interpolate_patterns(patterns; N_angles, Nx, Ny)
+
+
+end
+
+
+
+"""
     calculate_IoU(target, printed)
 
 Calculate the Intersection over Union (IoU) of the `printed` object compared with the `target` object.
