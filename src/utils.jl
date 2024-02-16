@@ -1,4 +1,5 @@
 export printing_errors, plot_intensity_histogram, save_patterns, calculate_IoU
+export load_example_target
 
 """
     interpolate_patterns(patterns, N_angles)
@@ -8,6 +9,23 @@ function interpolate_patterns(patterns; N_angles, Nx, Ny)
 
 
 end
+
+
+function load_example_target(name)
+    if name == "3DBenchy_180"
+        return JLD2.load(joinpath(artifact"name", "benchy_100.jld2"), "target")
+    else
+        throw(ArgumentError("Unknown example target $name"))
+    end
+end
+
+
+
+
+
+
+
+
 
 
 
