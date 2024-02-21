@@ -113,7 +113,7 @@ julia> patterns, printed_intensity, res = optimize_patterns(target, VialRayOptic
                      ), GradientBased(), LossThreshold())
 ```
 """
-function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, ParallelRayOptics}, op::GradientBased, loss::LossThreshold) where T
+function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, ParallelRayOptics}, op::GradientBased, loss::LossTarget) where T
     if T == Float64 && target isa CuArray
         @warn "Target seems to be Float64. For CUDA it is recommended to use a Float32 element type"
     end

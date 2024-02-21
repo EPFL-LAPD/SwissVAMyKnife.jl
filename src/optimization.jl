@@ -59,7 +59,7 @@ function make_fg!(fwd, target, loss)
 
     f = let loss=loss, fwd=fwd, target= (target .≈ 1)
         function f(x::AbstractArray{T}) where T
-            return loss(fwd(x), target)
+            return loss(fwd(x), target, x)
 		end
     end
 

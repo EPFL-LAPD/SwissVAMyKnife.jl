@@ -1,4 +1,4 @@
-export LossTarget, LossThreshold 
+export LossTarget, LossThreshold, LossThresholdSparsity 
 
 """
     LossTarget
@@ -24,7 +24,6 @@ Keeps the object voxels in the range `[T_U, 1]` and the empty space in the range
 * The default `K=2` corresponds to `sum_f=abs2`.
 * `(T_L, T_U) = thresholds`
 
-
 ```jldoctest
 julia> l = LossThreshold(thresholds=(0.5, 0.7))
 LossThreshold{typeof(abs2), Float64}(abs2, (0.5, 0.7))
@@ -41,7 +40,7 @@ julia> target = [1, 0, 1]
  0
  1
 
-julia> l(x, target)
+julia> l(x, target, nothing)
 0.022499999999999975
 
 julia> (0.7 - 0.55)^2
@@ -58,15 +57,62 @@ struct LossThreshold{F, T} <: LossTarget
     end
 end
 
+
+
+"""
+    LossThresholdSparsity(;sum_f=abs2, thresholds=(0.65f0, 0.75f0), λ=0.001f0)
+
+Loss function for polymerization. 
+Keeps the object voxels in the range `[T_U, 1]` and the empty space in the range `[0, T_L]`.
+Also it avoids that the patterns are too sparse with a regularization term.
+
+\$\$\\mathcal{L} = \\underbrace{\\sum_{v \\,\\in\\,\\text{object}} |\\text{ReLu}(T_U - I_v)|^K}_\\text{force object polymerization} + \$\$
+\$\$+\\underbrace{\\sum_{v\\,\\notin\\,\\text{object}} |\\text{ReLu}(I_v - T_L) |^K}_{\\text{keep empty space unpolymerized}} +\$\$
+\$\$+\\underbrace{\\sum_{v \\,\\in\\,\\text{object}} |\\text{ReLu}(I_v - 1)|^K}_{\\text{avoid overpolymerization}}\$\$
+\$\$+\\underbrace{\\sum_{p \\,\\in\\,\\text{patterns}} |P_p)|^2}_{\\text{avoid sparse patterns}}\$\$
+
+* The default `K=2` corresponds to `sum_f=abs2`.
+* `(T_L, T_U) = thresholds`
+* `λ` is a regularization term weight to avoid sparse patterns.
+
+```jldoctest
+julia> l = LossThresholdSparsity(thresholds=(0.5, 0.7), λ=0.00001f0)
+LossThresholdSparsity{typeof(abs2), Float64}(abs2, (0.5, 0.7), 1.5705e-319)
+
+julia> x = [1.0, 0.0, 0.55];
+
+julia> target = [1, 0, 1];
+
+julia> l(x, target, [1,2,3.0])
+0.022499999999999975
+```
+"""
+struct LossThresholdSparsity{F, T} <: LossTarget 
+    sum_f::F
+    thresholds::Tuple{T, T}
+    λ::T
+    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-6)
+        return new{typeof(sum_f), typeof(thresholds[1])}(sum_f, thresholds)
+    end
+end
+
+
+function (l::LossThresholdSparsity)(x::AbstractArray{T}, target, patterns) where T
+     return @inbounds (sum(l.sum_f.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
+                           l.sum_f.(NNlib.relu.(x .- T(1))                  .* target) .+
+                           l.sum_f.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target)))) + T(l.λ) * sum(x -> x^2, patterns)
+end
+
+
 """
     lesson learnt from this: don't to x[isobject] where isobject would be a boolean array.
     rather express it with arithmetics. this is much faster
 
 """
-function (l::LossThreshold)(x::AbstractArray{T}, target) where T
-     return @inbounds (sum(abs2.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
-                           abs2.(NNlib.relu.(x .- T(1))                  .* target) .+
-                           abs2.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))))
+function (l::LossThreshold)(x::AbstractArray{T}, target, patterns) where T
+     return @inbounds (sum(l.sum_f.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
+                           l.sum_f.(NNlib.relu.(x .- T(1))                  .* target) .+
+                           l.sum_f.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))))
 
     #return foldl((acc, t) -> acc[1] + abs2(NNlib.relu(T(l.thresholds[2]) - t[1]) * t[2]) + 
     #                                abs2(NNlib.relu(t[1] - T(1)) * t[2]) +
