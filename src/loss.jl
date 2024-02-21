@@ -64,9 +64,18 @@ end
 
 """
 function (l::LossThreshold)(x::AbstractArray{T}, target) where T
-    return @inbounds (sum(abs2.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
-                          abs2.(NNlib.relu.(x .- T(1))                  .* target) .+
-                          abs2.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))))
+     return @inbounds (sum(abs2.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
+                           abs2.(NNlib.relu.(x .- T(1))                  .* target) .+
+                           abs2.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))))
+
+    #return foldl((acc, t) -> acc[1] + abs2(NNlib.relu(T(l.thresholds[2]) - t[1]) * t[2]) + 
+    #                                abs2(NNlib.relu(t[1] - T(1)) * t[2]) +
+    #                                abs2(NNlib.relu(t[1] - T(l.thresholds[1])) * (T(1) - t[2])),
+    #                                zip(x, target))
+    #return mapreduce((x, t) -> abs2(NNlib.relu(T(l.thresholds[2]) - x) * t) + 
+    #                                abs2(NNlib.relu(x - T(1)) * t) +
+    #                                abs2(NNlib.relu(x - T(l.thresholds[1])) * (T(1) - t)),
+    #                +, x, target)
 end
 
 
