@@ -46,14 +46,12 @@ The function will insert them into an array full of zeos of size `180x180` and s
 
 """
 function load_image_stack(sz, sz_file, path)
-    error("Not implemented yet")
-    return 
 
 	target = zeros(Float32, sz)
 	#@show size(load(joinpath(path, string("slice_", string(1, pad=3) ,".png"))))
 	
 	for i in 0:sz_file[1]-1
-		target[:, :, 40 + i+1] .= select_region(Gray.(load(joinpath(path, string("boat_", string(i, pad=3) ,".png")))), new_size=(sz))
+		target[:, :, 5 + i+1] .= select_region(Gray.(load(joinpath(path, string("boat_", string(i, pad=2) ,".png")))), new_size=(sz))
 	end
 
 	target2 = select_region(target, new_size=sz)
@@ -119,8 +117,8 @@ function plot_intensity_histogram(target, object_printed, thresholds; yscale=:lo
     default(fontfamily=plot_font,
 	    linewidth=2, framestyle=:box, label=nothing, grid=false)
     m = maximum(object_printed)
-	plot(object_printed[target .== 0], seriestype=:stephist, bins=(0.0:0.01:m), xlim=(0.0, m), label="dose distribution void", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(400, 300))
-	plot!(object_printed[target .== 1], seriestype=:stephist, bins=(0.0:0.01:m), xlim=(0.0, m), label="dose distribution object", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(400, 300))
+	plot(object_printed[target .== 0], seriestype=:stephist, bins=(0.0:0.01:m), xlim=(0.0, 1.1), label="dose distribution void", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(400, 300))
+	plot!(object_printed[target .== 1], seriestype=:stephist, bins=(0.0:0.01:m), xlim=(0.0, 1.1), label="dose distribution object", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(400, 300))
 	plot!([thresholds[1], thresholds[1]], [1, 10000_000], label="lower threshold", linewidth=1)
 	plot!([thresholds[2], thresholds[2]], [1, 10000_000], label="upper threshold", linewidth=1)
 	#plot!([chosen_threshold, chosen_threshold], [1, 30000000], label="chosen threshold", linewidth=3)

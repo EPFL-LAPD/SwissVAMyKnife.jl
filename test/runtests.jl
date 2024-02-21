@@ -69,10 +69,9 @@ end
 
 @testset "test rrule of custom loss" begin
     l = LossThreshold(sum_f=abs2, thresholds=(0.4, 0.94))
-
     x = randn((4,4,4))
     target = x .> 0.5
-    test_rrule(l ⊢ ChainRulesTestUtils.NoTangent(), x, target ⊢ ChainRulesTestUtils.NoTangent())
+    test_rrule(l ⊢ ChainRulesTestUtils.NoTangent(), x, target ⊢ ChainRulesTestUtils.NoTangent(), x ⊢ ChainRulesTestUtils.NoTangent())
 end
 
 

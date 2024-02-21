@@ -69,7 +69,7 @@ Also it avoids that the patterns are too sparse with a regularization term.
 \$\$\\mathcal{L} = \\underbrace{\\sum_{v \\,\\in\\,\\text{object}} |\\text{ReLu}(T_U - I_v)|^K}_\\text{force object polymerization} + \$\$
 \$\$+\\underbrace{\\sum_{v\\,\\notin\\,\\text{object}} |\\text{ReLu}(I_v - T_L) |^K}_{\\text{keep empty space unpolymerized}} +\$\$
 \$\$+\\underbrace{\\sum_{v \\,\\in\\,\\text{object}} |\\text{ReLu}(I_v - 1)|^K}_{\\text{avoid overpolymerization}}\$\$
-\$\$+\\underbrace{\\sum_{p \\,\\in\\,\\text{patterns}} |P_p)|^2}_{\\text{avoid sparse patterns}}\$\$
+\$\$+\\underbrace{\\sum_{p \\,\\in\\,\\text{patterns}} |P_p)|^4}_{\\text{avoid sparse patterns}}\$\$
 
 * The default `K=2` corresponds to `sum_f=abs2`.
 * `(T_L, T_U) = thresholds`
@@ -84,15 +84,15 @@ julia> x = [1.0, 0.0, 0.55];
 julia> target = [1, 0, 1];
 
 julia> l(x, target, [1,2,3.0])
-0.022499999999999975
+0.023479999975243093
 ```
 """
 struct LossThresholdSparsity{F, T} <: LossTarget 
     sum_f::F
     thresholds::Tuple{T, T}
     λ::T
-    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-6)
-        return new{typeof(sum_f), typeof(thresholds[1])}(sum_f, thresholds)
+    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-4)
+        return new{typeof(sum_f), typeof(thresholds[1])}(sum_f, thresholds, λ)
     end
 end
 
@@ -100,7 +100,8 @@ end
 function (l::LossThresholdSparsity)(x::AbstractArray{T}, target, patterns) where T
      return @inbounds (sum(l.sum_f.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
                            l.sum_f.(NNlib.relu.(x .- T(1))                  .* target) .+
-                           l.sum_f.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target)))) + T(l.λ) * sum(x -> x^2, patterns)
+                           l.sum_f.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))) + 
+                       T(l.λ) * sum(x -> x^4, patterns))
 end
 
 
@@ -129,14 +130,14 @@ end
     custom rules for the abs2 loss function (default).
     no real speed gain but much less memory consumption 
 """
-function ChainRulesCore.rrule(l::LossThreshold{typeof(abs2), TT}, x::AbstractArray{T}, target) where {T, TT}
-    res = l(x, target)
+function ChainRulesCore.rrule(l::LossThreshold{typeof(abs2), TT}, x::AbstractArray{T}, target, patterns) where {T, TT}
+    res = l(x, target, patterns)
     function pb(y)
         y = unthunk(y)
         g = @inbounds (2 .* y .* ((.- SwissVAMyKnife.NNlib.relu.(T(l.thresholds[2]) .- x) .* target) .+  
                                   (SwissVAMyKnife.NNlib.relu.(x .- Int(1))                .* target) .+ 
                                   (SwissVAMyKnife.NNlib.relu.(x .- T(l.thresholds[1])) .* (1 .- target))))
-        return NoTangent(), g, NoTangent() 
+        return NoTangent(), g, NoTangent(), NoTangent()
     end
     return res, pb
 end

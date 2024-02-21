@@ -86,7 +86,7 @@ Let's use the `LossThreshold` to achieve this:
 "
 
 # ╔═╡ ae3fdae9-7b3c-4391-8fff-530f7758942c
-loss = LossThreshold(thresholds=(0.65, 0.75))
+loss = LossThreshold(thresholds=(0.85, 0.95))
 
 # ╔═╡ b58c9e1f-7ca6-4171-8004-2b84d33cf335
 md"## Specify Geometry
@@ -111,7 +111,7 @@ geometry = ParallelRayOptics(angles, μ)
 md" As optimizer we use a gradient descent based variant"
 
 # ╔═╡ e5f0660d-2adb-4c82-8945-e8164ec500f6
-optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=10, store_trace=true))
+optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=20, store_trace=true))
 
 # ╔═╡ b767afa8-784c-453b-ad0d-a1daf4d5ba5c
 md"
@@ -134,10 +134,10 @@ Object pixels stay well above it
 "
 
 # ╔═╡ 66560fd0-3cee-41ca-bb13-dee2a78bbb9b
-plot_intensity_histogram(target, printed_intensity, (0.65, 0.75))
+plot_intensity_histogram(target, printed_intensity, loss.thresholds)
 
 # ╔═╡ dc538ea6-54e3-4a0f-a5ef-427802239cf2
-md"threshold value $(@bind thresh PlutoUI.Slider(0:0.01:1, show_value=true, default=0.5))"
+md"threshold value $(@bind thresh PlutoUI.Slider(0:0.01:1.05, show_value=true, default=0.5))"
 
 # ╔═╡ 71333d50-fa28-4bdf-bad4-d787682e043a
 md"
@@ -150,6 +150,12 @@ Printed intensity ----------------------------- Printed intensity after threshol
 
 # ╔═╡ 92f5b987-13c7-463c-b150-71c51ec4aa72
 simshow(Array(patterns)[:, :, 1], cmap=:turbo)
+
+# ╔═╡ 6654e278-3d71-48a3-9382-7b8e486f4d72
+sum(patterns ./ maximum(patterns)) / length(patterns)
+
+# ╔═╡ 3fb2afdb-2ad2-4ce5-9ca3-e1c5c1d45970
+histogram(Array(patterns[:]), yscale=:log10)
 
 # ╔═╡ 11af6da4-5fa2-4e48-a1c8-32bc686b8239
 md"# 4. Include Absorption of the Photo initiator
@@ -170,11 +176,11 @@ geometry_μ = ParallelRayOptics(angles, μ2)
 
 # ╔═╡ 0e4da85b-99bd-47e0-a8fe-3c69c3a05708
 @mytime patterns_μ, printed_intensity_μ, optim_res_μ = optimize_patterns(togoc(target), geometry_μ, 
-								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=10, store_trace=true))					
+								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=100, store_trace=true))					
 								, loss)
 
 # ╔═╡ a04d12c2-f718-44e0-a755-da1132c0330e
-plot_intensity_histogram(target, printed_intensity_μ, (0.65, 0.75))
+plot_intensity_histogram(target, printed_intensity_μ,  loss.thresholds)
 
 # ╔═╡ 5ade07d4-e7b3-4e78-94fa-454924a4066c
 @bind thresh2 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.5)
@@ -229,10 +235,7 @@ geometry_vial = VialRayOptics(
 size(patterns_vial)
 
 # ╔═╡ 9ddd098d-2d78-4de8-a322-40a2463adcda
-plot_intensity_histogram(target, printed_intensity_vial, (0.65, 0.75))
-
-# ╔═╡ d1f33cd0-0927-417e-a024-6a8c76da1fb9
-
+plot_intensity_histogram(target, printed_intensity_vial, loss.thresholds)
 
 # ╔═╡ d56eb3ab-4698-4ee4-aae1-461b964b778c
 @bind thresh3 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.5)
@@ -250,11 +253,46 @@ However, this is not exactly if absorption takes place.
 # ╔═╡ fc239b37-dc88-48cd-9479-99074d96ece5
 simshow(Array(patterns_vial[:,:,1]), cmap=:turbo)
 
+# ╔═╡ 65d23a80-ad8b-4b36-90a0-d6427c19ff88
+md"
+The efficiency can be defined as the mean of the pixel values divided by the maximum.
+Because in experiment the real absolute maximum is fixed by the light source intensity. Hence we would like to maximize the real efficiency of the DMD
+"
+
 # ╔═╡ 7de5d398-20d6-44e2-b2eb-3007111e146f
 sum(patterns_vial) / (maximum(patterns_vial) * length(patterns_vial))
 
-# ╔═╡ 006aa5f6-8008-455a-a2a6-54eeb0c097bf
+# ╔═╡ 79bea0b4-d990-4269-8e4f-6abe19023f87
+md"# 6. Reduce Sparsity"
 
+# ╔═╡ 699a0dbd-df85-41b9-b751-cc936d6c03c5
+loss_sparse = LossThresholdSparsity(thresholds=(0.75f0, 0.85f0), λ=3f-6)
+
+# ╔═╡ 006aa5f6-8008-455a-a2a6-54eeb0c097bf
+@mytime patterns_vial_s, printed_intensity_vial_s, optim_res_vial_s = optimize_patterns(togoc(target), geometry_vial, 
+								GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=50, store_trace=true))					
+								, loss_sparse)
+
+# ╔═╡ 9f7d62be-378f-4b3c-bf38-239c9daa8705
+plot_intensity_histogram(target, printed_intensity_vial_s, loss_sparse.thresholds)
+
+# ╔═╡ b4c7ed0d-e31e-417b-abaf-2193980c9378
+@bind thresh5 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.5)
+
+# ╔═╡ afa94e1a-d426-4a29-b0fd-73bcdc3e914f
+[simshow(Array(printed_intensity_vial_s[:, :, 1])) simshow(ones((sz[1], 5))) simshow(thresh5 .< Array(printed_intensity_vial_s[:, :, 1])) simshow(ones((sz[1], 5))) simshow(target[:, :, 1])]
+
+# ╔═╡ 0fc8abe6-2a22-477e-b2a4-6ccba1e16991
+simshow(Array(patterns_vial_s[:,:,1]), cmap=:turbo)
+
+# ╔═╡ dc0c21f2-980a-4c97-9a9d-b3d824121bbe
+md"
+The efficiency can be defined as the mean of the pixel values divided by the maximum.
+Because in experiment the real absolute maximum is fixed by the light source intensity. Hence we would like to maximize the real efficiency of the DMD
+"
+
+# ╔═╡ 23c9a442-d892-464d-9174-960eca8de2e7
+sum(patterns_vial_s) / (maximum(patterns_vial_s) * length(patterns_vial))
 
 # ╔═╡ a7cafba6-849a-4eb8-9709-a76cb98e9879
 md"# 7. Let's do a bigger 3D object!
@@ -348,6 +386,8 @@ simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo, set_one=true)
 # ╟─71333d50-fa28-4bdf-bad4-d787682e043a
 # ╟─5801f61a-79fa-4326-82dd-3901dd4d493a
 # ╠═92f5b987-13c7-463c-b150-71c51ec4aa72
+# ╠═6654e278-3d71-48a3-9382-7b8e486f4d72
+# ╠═3fb2afdb-2ad2-4ce5-9ca3-e1c5c1d45970
 # ╟─11af6da4-5fa2-4e48-a1c8-32bc686b8239
 # ╠═2f51ec68-09c6-4475-81b9-ec252fba5df7
 # ╠═2e76c088-e61f-4deb-ac69-b73d6e3f361c
@@ -362,13 +402,21 @@ simshow(Array(patterns_3D[:,angle,:]), cmap=:turbo, set_one=true)
 # ╠═71b479a0-29fc-4411-a02d-096427f2a631
 # ╠═675764cb-721a-4b89-92c4-8a1ab7f5867f
 # ╠═9ddd098d-2d78-4de8-a322-40a2463adcda
-# ╠═d1f33cd0-0927-417e-a024-6a8c76da1fb9
-# ╠═d56eb3ab-4698-4ee4-aae1-461b964b778c
+# ╟─d56eb3ab-4698-4ee4-aae1-461b964b778c
 # ╟─b6a6237f-b03f-402d-9693-f00044e3539e
 # ╟─eda29eed-507c-4f55-b1e6-590c9616db8e
 # ╠═fc239b37-dc88-48cd-9479-99074d96ece5
-# ╠═7de5d398-20d6-44e2-b2eb-3007111e146f
+# ╟─65d23a80-ad8b-4b36-90a0-d6427c19ff88
+# ╟─7de5d398-20d6-44e2-b2eb-3007111e146f
+# ╟─79bea0b4-d990-4269-8e4f-6abe19023f87
+# ╠═699a0dbd-df85-41b9-b751-cc936d6c03c5
 # ╠═006aa5f6-8008-455a-a2a6-54eeb0c097bf
+# ╠═9f7d62be-378f-4b3c-bf38-239c9daa8705
+# ╟─b4c7ed0d-e31e-417b-abaf-2193980c9378
+# ╟─afa94e1a-d426-4a29-b0fd-73bcdc3e914f
+# ╠═0fc8abe6-2a22-477e-b2a4-6ccba1e16991
+# ╟─dc0c21f2-980a-4c97-9a9d-b3d824121bbe
+# ╟─23c9a442-d892-464d-9174-960eca8de2e7
 # ╟─a7cafba6-849a-4eb8-9709-a76cb98e9879
 # ╠═8824fb56-0fbf-4cba-9aea-6449627923f2
 # ╠═0a655d51-e3b6-413b-83de-9781974242a2
