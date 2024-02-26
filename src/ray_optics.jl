@@ -185,7 +185,7 @@ end
 """
 https://en.wikipedia.org/wiki/Fresnel_equations#Power_(intensity)_reflection_and_transmission_coefficients
 """
-function _fresnel_weights(ps::VialRayOptics, in_height)
+function _fresnel_weights(ps::Union{VialRayOptics, OSTRayOptics}, in_height)
     # fix any bugs in the code below
     # air
     n₁ = 1 
