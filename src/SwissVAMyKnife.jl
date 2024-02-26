@@ -52,6 +52,6 @@ include("loss.jl")
 include("optimization.jl")
 include("wave_optics.jl")
 include("ray_optics.jl")
-
+include("optical_scattering_tomography.jl")
 
 end # module SwissVAMyKnife
