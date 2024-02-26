@@ -84,6 +84,12 @@ geometry_radon = SwissVAMyKnife.prepare_OST_geometry(target, geometry_OST)
 # ╔═╡ 6eb9c0bc-2aa7-470d-96ca-3716c3c75e4e
 sinogram = radon(target, angles; geometry=geometry_radon);
 
+# ╔═╡ 6660d36d-d1ba-4a48-ad4b-2e9c486cd7c2
+@time begin
+	filtered = backproject_filtered(sinogram, angles; geometry=geometry_radon);
+	filtered ./= maximum(filtered)
+end;
+
 # ╔═╡ 3b51d546-80f3-4cc0-8cf6-fd31834a070d
 measured = togoc(poisson(Array(sinogram), 100_000));
 
@@ -94,13 +100,13 @@ simshow(Array(measured)[:, :, 1])
 md"# 3. Reconstruct"
 
 # ╔═╡ 6138e8d0-c457-4916-a520-b1d70c26997b
-rec0, ores = reconstruct_OST(measured, geometry_OST, λ=1f-5, 
+@time rec0, ores = reconstruct_OST(measured, geometry_OST, λ=1f-5, 
 							iterations=20)
 
 # ╔═╡ 76839478-b978-47cf-9641-7b4e85c8c2d6
 begin
 	rec0 ./= maximum(rec0);
-	simshow([Array(rec0)[:, :, 1] Array(target)[:, :, 1]])
+	simshow([Array(rec0)[:, :, 1] Array(filtered)[:, :, 1] Array(target)[:, :, 1]])
 end
 
 # ╔═╡ Cell order:
@@ -122,6 +128,7 @@ end
 # ╠═e5bec833-47c5-4f65-8667-f28d4ccb1fbc
 # ╠═60542c0f-875d-4f16-a25b-aec697753b72
 # ╠═6eb9c0bc-2aa7-470d-96ca-3716c3c75e4e
+# ╠═6660d36d-d1ba-4a48-ad4b-2e9c486cd7c2
 # ╠═3b51d546-80f3-4cc0-8cf6-fd31834a070d
 # ╠═b0a5c9f6-448c-46b5-b031-773f489551bc
 # ╟─3dfccb9a-8f21-4695-965c-c1d97077ba52
