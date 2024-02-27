@@ -1,46 +1,5 @@
 export OSTRayOptics, reconstruct_OST
 
-"""
-
-Type to represent a ray optical approach where refraction and reflection intensity loss at the glass vial is considered.
-This is used for the reconstruction of the Optical Scattering Tomography (OST) setup
-Forward model is the (attenuated) Radon transform.
-
-- `angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
-- `μ` is the absorption coefficient of the resin in units of pixels.
-- So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
-- `R_outer` is the outer radius of the glass vial.
-- `R_inner` is the inner radius of the glass vial.
-- `camera_diameter` is the diameter of the camera along the vial radius. So this is not the height along the rotation axis!
-- `n_vial` is the refractive index of the glass vial.
-- `n_resin` is the refractive index of the resin.
-- `polarization=PolarizationRandom()` is the polarization of the light. See [`Polarization`](@ref) for the options. 
-
-
-# Examples
-```jldoctest
-julia> OSTRayOptics(angles=range(0,2π, 501)[begin:end-1],
-                     μ=nothing,
-                     R_outer=6e-3,
-                     R_inner=5.5e-3,
-                     camera_diameter=2 * R_outer,
-                     n_vial=1.47,
-                     n_resin=1.48,
-                     polarization=PolarizationRandom()
-                     )
-```
-"""
-@with_kw struct OSTRayOptics{T, ToN, A, P} <: PropagationScheme
-    angles::A
-    μ::ToN=nothing
-    R_outer::T=8e-3
-    R_inner::T=7.6e-3
-    n_vial::T
-    n_resin::T
-    camera_diameter::T=2 * R_outer
-    polarization::P=PolarizationRandom()
-end
-
 
 
 
