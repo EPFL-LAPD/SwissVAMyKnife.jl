@@ -1,4 +1,4 @@
-# Geometry 
+## Geometry 
 ```@docs
 PropagationScheme
 ParallelRayOptics
@@ -7,7 +7,7 @@ WaveOptics
 Polarization
 ```
 
-# Optimization
+## Optimization
 ```@docs
 optimize_patterns
 ```

@@ -21,9 +21,12 @@ end
 
 
 """
-    optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::LossThreshold)
+    optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::Union{LossThreshold, LossThresholdSparsity})
 
 Optimize the patterns to match the target with the wave optical model.
+`target` is the target intensity. `ps` is the wave optical model. `op` is the optimization method.
+`loss` is the loss function.
+
 
 
 """
