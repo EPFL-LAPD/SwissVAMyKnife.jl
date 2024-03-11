@@ -100,16 +100,16 @@ simshow(Array(target[:, :, slice]))
 md"# 2. Specify Optimization Parameters"
 
 # ╔═╡ d1fb09d5-cee0-4027-acaa-24ccabaf9cf0
-loss = LossThreshold(thresholds=(0.65, 0.75))
+loss = LossThreshold(thresholds=(0.7, 0.8))
 
 # ╔═╡ 8328d500-2760-46db-9733-479763d5c08f
-angles = range(0, 2π, 301)[begin:end-1]
+angles = range(0, 2π, 201)[begin:end-1]
 
 # ╔═╡ 93cebf3f-389b-4fde-8d13-af3e1165ad9c
 geometry = ParallelRayOptics(angles, nothing)
 
 # ╔═╡ 2ffbef8c-066d-49b6-8a29-1ef710099029
-optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=20, store_trace=true))
+optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=40, store_trace=true))
 
 # ╔═╡ c0529850-c323-4c72-bab1-ec414d3ad425
 md"# 3. Optimize"
@@ -140,7 +140,7 @@ Intensity distribution ----------- after threshold -------------------- target -
 [simshow(Array(printed_intensity[:, :, slice2]), set_one=false, cmap=:turbo) simshow(ones((size(target, 1), 5))) simshow(thresh4 .< Array(printed_intensity[:, :, slice2])) simshow(ones((size(target, 1), 5))) simshow(Array(target[:, :, slice2]))  simshow(ones((size(target, 1), 5))) simshow(Array(togoc(target)[:, :, slice2] .!= (thresh4 .< (printed_intensity[:, :, slice2]))))]
 
 # ╔═╡ d7de379b-601f-4bd5-b26d-45d424811aa2
-plot_intensity_histogram(target, printed_intensity, (0.65, 0.75))
+plot_intensity_histogram(target, printed_intensity, loss.thresholds)
 
 # ╔═╡ 21a99ca0-6b97-4a83-9780-bb120f190afd
 md"Different projection patterns: $(@bind angle PlutoUI.Slider(axes(patterns, 2), show_value=true, default=0.5))"
@@ -154,7 +154,7 @@ Here some boiler plate to use the ray optical patterns as input for the wave opt
 "
 
 # ╔═╡ 1350e0e8-7674-4653-85a4-43fa96e983a9
-L_x = 80f-6
+L_x = 100f-6
 
 # ╔═╡ 73a104ac-5d6b-4d3b-81c8-3d9088fd77c1
 λ = 405f-9 / 1.5f0
@@ -170,10 +170,10 @@ patterns_reshape = select_region(permutedims(patterns, (3,1,2)), new_size=(size(
 
 # ╔═╡ d0a78a5d-d56d-46ba-8255-4f62826862e3
 begin
-	 AS, _ = AngularSpectrum(copy(patterns_reshape[:, :, 1]) .+ 0im, z, λ, L_x, padding=false)
+	 AS = AngularSpectrum(copy(patterns_reshape[:, :, 1]) .+ 0im, z, λ, L_x, padding=false)
 	 AS_abs2 = let target=target, AS=AS, langles=length(angles)
 		function AS_abs2(x)
-			abs2.(AS(x .+ 0im)[1]) ./ langles
+			abs2.(AS(x .+ 0im)) ./ langles
 		end
 	 end
 
@@ -193,7 +193,11 @@ size(patterns_reshape)
 out_wave = fwd2(sqrt.(patterns_reshape));
 
 # ╔═╡ d4f528b2-d007-40dd-ab16-7a6f3369a3cf
-iou = round(calculate_IoU(permutedims(togoc(target), (3,1,2)), permutedims(out_wave, (1,3,2)) .> 0.7), digits=3)
+begin
+	CUDA.@sync out_wave
+	
+	iou = round(calculate_IoU(permutedims(togoc(target), (3,1,2)), permutedims(out_wave, (1,3,2)) .> 0.75), digits=3)
+end
 
 # ╔═╡ f89de548-d445-4452-a80b-a714cf30ea42
 md"The intersection over union is: $iou"
@@ -202,7 +206,7 @@ md"The intersection over union is: $iou"
 @bind depth2 PlutoUI.Slider(1:size(patterns, 3), show_value=true, default=77)
 
 # ╔═╡ 62cda1a6-75ba-4fd1-90ca-bba4362a297e
-[simshow(Array(out_wave[depth2, :, :]'), cmap=:acton) simshow(Array(out_wave[depth2, :, :]') .> 0.70) simshow(Array(target[:, :, depth2])) simshow(Array(target[:, :, depth2]) .!= Array(out_wave[depth2, :, :]' .> 0.70))]
+[simshow(Array(out_wave[depth2, :, :]'), cmap=:acton) simshow(Array(out_wave[depth2, :, :]') .> 0.75) simshow(Array(target[:, :, depth2])) simshow(Array(target[:, :, depth2]) .!= Array(out_wave[depth2, :, :]' .> 0.70))]
 
 # ╔═╡ Cell order:
 # ╟─7279f1d1-6423-44ae-b071-7c2847026ca9
@@ -248,7 +252,7 @@ md"The intersection over union is: $iou"
 # ╠═d0a78a5d-d56d-46ba-8255-4f62826862e3
 # ╠═a745d025-8315-417a-948c-1a0b05d9e19b
 # ╠═e93b8a10-f38f-4b73-89b0-5990c981e883
-# ╠═d4f528b2-d007-40dd-ab16-7a6f3369a3cf
+# ╟─d4f528b2-d007-40dd-ab16-7a6f3369a3cf
 # ╟─f89de548-d445-4452-a80b-a714cf30ea42
-# ╠═670e51cb-2d2f-46f4-b8e7-69d6cb81ace5
+# ╟─670e51cb-2d2f-46f4-b8e7-69d6cb81ace5
 # ╟─62cda1a6-75ba-4fd1-90ca-bba4362a297e
