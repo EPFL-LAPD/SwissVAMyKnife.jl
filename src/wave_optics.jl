@@ -46,10 +46,10 @@ function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::Loss
     mask = reshape((x.^2 .+ x'.^2) .<= ps.L^2, (1, size(x,1), size(x,1)))
 
 
-    AS, _ = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=true)
+    AS = AngularSpectrum(patterns_0[:, :, 1] .+ 0im, z, λ, L, padding=true)
     AS_abs2 = let target=target, AS=AS, langles=length(angles)
             function a(x)
-                abs2.(AS(NNlib.relu.(x) .+ 0im)[1]) ./ langles
+                abs2.(AS(NNlib.relu.(x) .+ 0im)) ./ langles
             end
     end
 
