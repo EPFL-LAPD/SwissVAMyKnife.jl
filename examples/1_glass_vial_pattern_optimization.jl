@@ -345,7 +345,7 @@ md"z slider value $(@bind slice2 PlutoUI.Slider(axes(target_3D, 3), show_value=t
 [simshow(Array(printed_intensity_3D[:, :, slice2]), set_one=false) simshow(ones((size(target_3D, 1), 5))) simshow(thresh4 .< Array(printed_intensity_3D[:, :, slice2])) simshow(ones((size(target_3D, 1), 5))) simshow(target_3D[:, :, slice2])]
 
 # ╔═╡ 83793ffe-38de-4a76-b80f-8dee1d18c5a5
-plot_intensity_histogram(target_3D, printed_intensity_3D, (0.65, 0.75))
+plot_intensity_histogram(target_3D, printed_intensity_3D, loss.thresholds)
 
 # ╔═╡ 262b96e8-a78c-441c-9b46-2d87636286d7
 md"angle $(@bind angle PlutoUI.Slider(axes(patterns_3D, 2), show_value=true, default=0.5))"
