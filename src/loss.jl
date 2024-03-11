@@ -74,25 +74,16 @@ Also it avoids that the patterns are too sparse with a regularization term.
 * The default `K=2` corresponds to `sum_f=abs2`.
 * `(T_L, T_U) = thresholds`
 * `λ` is a regularization term weight to avoid sparse patterns.
+* `sparsity_sum_f` is the sum function to compute the sparsity of the patterns.
 
-```jldoctest
-julia> l = LossThresholdSparsity(thresholds=(0.5, 0.7), λ=0.00001f0)
-LossThresholdSparsity{typeof(abs2), Float64}(abs2, (0.5, 0.7), 1.5705e-319)
-
-julia> x = [1.0, 0.0, 0.55];
-
-julia> target = [1, 0, 1];
-
-julia> l(x, target, [1,2,3.0])
-0.023479999975243093
-```
 """
-struct LossThresholdSparsity{F, T} <: LossTarget 
+struct LossThresholdSparsity{F, T, F2} <: LossTarget 
     sum_f::F
     thresholds::Tuple{T, T}
     λ::T
-    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-4)
-        return new{typeof(sum_f), typeof(thresholds[1])}(sum_f, thresholds, λ)
+    sparsity_sum_f::F2
+    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-4, sparsity_sum_f=abs2)
+        return new{typeof(sum_f), typeof(thresholds[1]), typeof(sparsity_sum_f)}(sum_f, thresholds, λ, sparsity_sum_f)
     end
 end
 
@@ -101,7 +92,7 @@ function (l::LossThresholdSparsity)(x::AbstractArray{T}, target, patterns) where
      return @inbounds (sum(l.sum_f.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
                            l.sum_f.(NNlib.relu.(x .- T(1))                  .* target) .+
                            l.sum_f.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))) + 
-                       T(l.λ) * sum(x -> x^4, patterns))
+                        T(l.λ) * sum(l.sparsity_sum_f, patterns))
 end
 
 
