@@ -27,7 +27,7 @@ Optimize the patterns to match the target with the wave optical model.
 
 
 """
-function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::LossThreshold)
+function optimize_patterns(target, ps::WaveOptics, op::GradientBased, loss::Union{LossThreshold, LossThresholdSparsity})
     angles = ps.angles
     μ = ps.μ
     L = ps.L

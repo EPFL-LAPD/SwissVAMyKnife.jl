@@ -44,7 +44,7 @@ Parameters = "0.12"
 Plots = "1"
 RadonKA = "0.6"
 Statistics = "1.10"
-WaveOpticsPropagation = "0.1.0"
+WaveOpticsPropagation = "0.2.0"
 Zygote = "0.6"
 
 [extras]

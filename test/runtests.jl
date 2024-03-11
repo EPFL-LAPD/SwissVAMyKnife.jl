@@ -31,6 +31,8 @@ using ChainRulesTestUtils
     @test target2 !== (0.7 .> optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.65, 0.75)))[2])
     @test target2 == (0.45 .< optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))[2])
     @test target2 !== (0.45 .> optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))[2])
+    
+    @test target2 == (0.45 .< optimize_patterns((target2), geometry_vial, optimizer2, LossThresholdSparsity(thresholds=(0.4, 0.5)))[2])
 
     patterns, printed, res = optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))
     save_patterns(tempdir(), patterns, printed, angles2, target2; overwrite=true)
@@ -65,6 +67,33 @@ end
 
 end
 
+@testset "Simple wave optical simulation with sparse loss" begin
+
+    sz2 = (24, 24, 24)
+    target = box(Float32, sz2, (17, 17, 10)) .-  box(Float32, sz2, (9, 9, 8));
+
+    n_resin = 1.5f0
+    angles = range(0, π, 20)
+    optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=15, store_trace=true))
+
+
+    L = 100f-6
+    loss = LossThresholdSparsity(thresholds=(0.65, 0.75))
+
+    optimizer = GradientBased(optimizer=Optim.LBFGS(), 		options=Optim.Options(iterations=20, store_trace=true))
+
+    waveoptics = WaveOptics(
+	z=(range(-L/2, L/2, size(target,1))), 
+	L=L, 
+	λ=405f-9 / n_resin, 
+	μ=nothing, 
+	angles=angles,
+	)
+    patterns, printed, res = optimize_patterns(target, waveoptics, optimizer, loss)
+    @test target == (0.7 .< printed)
+    @test target !== (0.7 .> printed) 
+
+end
 
 
 @testset "test rrule of custom loss" begin
