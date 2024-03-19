@@ -109,7 +109,7 @@ Plot an intensity histogram of the `printed_object`.
 `target` is the original binary target object.
 `thresholds` should indicate the threshold values for polymerization.
 """
-function plot_intensity_histogram(target, object_printed, thresholds; yscale=:log10)
+function plot_intensity_histogram(target, object_printed, thresholds; yscale=:log10, xlim=(0.0, 1.1))
     # :stephist vs :barhist
     target = Array(target)
     object_printed = Array(object_printed)
@@ -117,8 +117,8 @@ function plot_intensity_histogram(target, object_printed, thresholds; yscale=:lo
     default(fontfamily=plot_font,
 	    linewidth=2, framestyle=:box, label=nothing, grid=false)
     m = maximum(object_printed)
-	plot(object_printed[target .== 0], seriestype=:stephist, bins=(0.0:0.01:m), xlim=(0.0, 1.1), label="dose distribution void", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(400, 300))
-	plot!(object_printed[target .== 1], seriestype=:stephist, bins=(0.0:0.01:m), xlim=(0.0, 1.1), label="dose distribution object", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(400, 300))
+	plot(object_printed[target .== 0], seriestype=:stephist, bins=(0.0:0.01:m), xlim=xlim, label="dose distribution void", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(400, 300))
+	plot!(object_printed[target .== 1], seriestype=:stephist, bins=(0.0:0.01:m),  label="dose distribution object", ylabel="voxel count", xlabel="normalized intensity",  ylim=(1, 10000000),  linewidth=1, legend=:topleft, yscale=yscale, size=(400, 300))
 	plot!([thresholds[1], thresholds[1]], [1, 10000_000], label="lower threshold", linewidth=1)
 	plot!([thresholds[2], thresholds[2]], [1, 10000_000], label="upper threshold", linewidth=1)
 	#plot!([chosen_threshold, chosen_threshold], [1, 30000000], label="chosen threshold", linewidth=3)
