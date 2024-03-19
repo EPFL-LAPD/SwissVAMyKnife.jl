@@ -27,8 +27,8 @@ h) is the general setup.
 
 # Features
 * 3D parallel Radon transform for ray optical simulation 
-* rigorous simulation of absorption and vial refraction
-* CUDA acceleration hence high performance
+* rigorous simulation of absorption and air -> vial -> resin refraction
+* CUDA acceleration -> high performance
 * 3D coherent wave optical optimization (see this [paper](https://arxiv.org/abs/2402.06283) for details and limitations). Note this has been only theoretical demonstrated and experimentally not validated.
 
 
