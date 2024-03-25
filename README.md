@@ -64,7 +64,7 @@ You can also join [my conference room](https://epfl.zoom.us/my/wechsler). Give m
 If you need any help regarding TVAM in general, don't hesistate to contact us!
 
 # Citation
-If you use this software in academic work, please consider citing:
+If you use this software in academic work, please consider citing this [preprint](https://arxiv.org/abs/2402.06283)
 ```bibtex
 @misc{wechsler2024wave,
       title={Wave optical model for tomographic volumetric additive manufacturing},
