@@ -37,7 +37,7 @@ Install the most recent [Julia version](https://julialang.org/downloads/). Then 
 ```julia
 julia> using Pkg
 
-julia> Pkg.add(url="github.com/EPFL-LAPD/SwissVAMyKnife.jl")
+julia> Pkg.add("SwissVAMyKnife")
 ```
 
 # Examples

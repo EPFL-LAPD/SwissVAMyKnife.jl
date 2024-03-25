@@ -36,11 +36,11 @@ h) is the general setup.
 
 
 # Installation
-We recommend the most recent Julia version:
+Install the most recent [Julia version](https://julialang.org/downloads/). Then open the REPL and run:
 ```julia
 julia> using Pkg
 
-julia> Pkg.add(url="github.com/EPFL-LAPD/SwissVAMyKnife.jl")
+julia> Pkg.add("SwissVAMyKnife")
 ```
 
 # Examples
