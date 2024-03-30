@@ -24,7 +24,6 @@ printed slice. f) is the intensity histogram of b). g) is the 3D view of the Ben
 h) is the general setup.
 
 
-
 # Features
 * 3D parallel Radon transform for ray optical simulation 
 * rigorous simulation of absorption and air -> vial -> resin refraction
