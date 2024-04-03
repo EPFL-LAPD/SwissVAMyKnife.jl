@@ -32,6 +32,7 @@ h) is the general setup.
 
 
 # Installation
+The installation and running of the examples is very simple. 
 Install the most recent [Julia version](https://julialang.org/downloads/). Then open the REPL and run:
 ```julia
 julia> using Pkg
@@ -40,7 +41,7 @@ julia> Pkg.add("SwissVAMyKnife")
 ```
 
 # Examples
-You can also run the [examples](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/tree/main/examples) locally.
+You can run the [examples](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/tree/main/examples) locally.
 Download this repository and then do the following in your REPL:
 ```julia
 julia> cd("examples/")
@@ -50,6 +51,14 @@ julia> using Pkg; Pkg.activate("."); Pkg.instantiate()
 
 julia> using Pluto; Pluto.run()
 ```
+Dependencies (including CUDA) are automatically installed!
+
+## Overview of the examples
+Here a short overview of the example:
+* A simple [2D example](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/blob/main/examples/1_glass_vial_pattern_optimization.jl) to showcase abilites to model glass vial refraction and without refraction
+* Here a [large 3D example](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/blob/main/examples/2_benchy_boat_optimization_ray_optics.jl) based on ray optics. It is compared with the wave optical propagator.
+* A [large 3D example](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/blob/main/examples/3_wave_optics_optimization.jl) based on the wave optical optimization
+* A [real example](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/blob/main/examples/4_realistic_pattern_optimization.jl) of our setup where the DMD is smaller than the glass vial.
 
 
 # Other packages
