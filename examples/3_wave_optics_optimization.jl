@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.38
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -67,6 +67,8 @@ CUDA accelerates the pattern generation easily by 5-20 times!
 Otherwise most of the code will be multithreaded on your CPU but we strongly recommended the usage of CUDA for large scale 3D pattern generation.
 
 Your CUDA is functional: **$(use_CUDA[])**
+
+If your CUDA is functional, the simulations will run on CUDA!
 "
 
 # ╔═╡ aad77bcc-9593-4a48-8518-107fc2832d75
@@ -79,7 +81,7 @@ togoc(x) = use_CUDA[] ? CuArray(x) : x
 
 
 # ╔═╡ 0cae8621-9b65-4506-b604-72719293d64d
-md"# 2. Simple optimization
+md"# 1. Simple optimization
 
 
 ## Loss Function
@@ -101,7 +103,7 @@ md"# 2. Target - 3D Benchy"
 target = togoc(load_example_target("3DBenchy_180"));
 
 # ╔═╡ 0594a1b3-cac0-4829-a801-78e2420022eb
-md"z slide value $(@bind slice PlutoUI.Slider(axes(target, 3), show_value=true, default=0.5))"
+md"z slide value $(@bind slice PlutoUI.Slider(axes(target, 3), show_value=true, default=80))"
 
 # ╔═╡ cc95eb12-e948-44ba-8165-edf6886efb37
 simshow(Array(target[:, :, slice]))
@@ -128,7 +130,7 @@ waveoptics = WaveOptics(
 	)
 
 # ╔═╡ 24fbd950-59ba-457d-9451-094a051d1268
-md"# Optimize
+md"# 4. Optimize
 This takes around ~1400s on a CUDA RTX 3060 to optimize
 "
 
@@ -145,7 +147,7 @@ res
 md"Threshold value=$(@bind thresh4 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.7))"
 
 # ╔═╡ 605ba331-a480-492f-98aa-402155d33ebf
-md"z slider value $(@bind slice2 PlutoUI.Slider(axes(target, 3), show_value=true, default=0.5))"
+md"z slider value $(@bind slice2 PlutoUI.Slider(axes(target, 3), show_value=true, default=80))"
 
 # ╔═╡ 6e67afcc-597d-4c18-a351-e24c5b732f2d
 [simshow(Array(printed[:, :, slice2]), set_one=false) simshow(ones((size(target, 1), 5))) simshow(thresh4 .< Array(printed[:, :, slice2])) simshow(ones((size(target, 1), 5))) simshow(Array(target[:, :, slice2]))]
