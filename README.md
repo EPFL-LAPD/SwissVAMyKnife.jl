@@ -28,7 +28,7 @@ h) is the general setup.
 * 3D parallel Radon transform for ray optical simulation 
 * rigorous simulation of absorption and air -> vial -> resin refraction
 * CUDA acceleration -> high performance
-* 3D coherent wave optical optimization (see this [paper](https://arxiv.org/abs/2402.06283) for details and limitations). Note this has been only theoretical demonstrated and experimentally not validated.
+* 3D coherent wave optical optimization (see this [publication](https://opg.optica.org/oe/fulltext.cfm?uri=oe-32-8-14705&id=548744) for details and limitations). Note this has been only theoretical demonstrated and experimentally not validated.
 
 
 # Installation
@@ -72,14 +72,20 @@ You can also join [my conference room](https://epfl.zoom.us/my/wechsler). Give m
 If you need any help regarding TVAM in general, don't hesistate to contact us!
 
 # Citation
-If you use this software in academic work, please consider citing this [preprint](https://arxiv.org/abs/2402.06283)
+If you use this software in academic work, please consider citing this [publication](https://opg.optica.org/oe/fulltext.cfm?uri=oe-32-8-14705&id=548744):
 ```bibtex
-@misc{wechsler2024wave,
-      title={Wave optical model for tomographic volumetric additive manufacturing},
-      author={Felix Wechsler and Carlo Gigli and Jorge Madrid-Wolff and Christophe Moser},
-      year={2024},
-      eprint={2402.06283},
-      archivePrefix={arXiv},
-      primaryClass={physics.optics}
+@article{Wechsler:24,
+author = {Felix Wechsler and Carlo Gigli and Jorge Madrid-Wolff and Christophe Moser},
+journal = {Opt. Express},
+keywords = {3D printing; Computed tomography; Liquid crystal displays; Material properties; Ray tracing; Refractive index},
+number = {8},
+pages = {14705--14712},
+publisher = {Optica Publishing Group},
+title = {Wave optical model for tomographic volumetric additive manufacturing},
+volume = {32},
+month = {Apr},
+year = {2024},
+url = {https://opg.optica.org/oe/abstract.cfm?URI=oe-32-8-14705},
+doi = {10.1364/OE.521322},
 }
 ```
