@@ -44,13 +44,19 @@ md"""# Supplemental simulations
 Note, in the publication we optimize a volume of 550x550x550 voxels which only runs on a large GPU (NVIDIA A100 with 80GB). Hence, here a smaller version which produces similar but not identical results because of a different discretization of the boat.
 
 ```bibtex
-@misc{wechsler2024wave,
-      title={Wave optical model for tomographic volumetric additive manufacturing}, 
-      author={Felix Wechsler and Carlo Gigli and Jorge Madrid-Wolff and Christophe Moser},
-      year={2024},
-      eprint={2402.06283},
-      archivePrefix={arXiv},
-      primaryClass={physics.optics}
+@article{Wechsler:24,
+author = {Felix Wechsler and Carlo Gigli and Jorge Madrid-Wolff and Christophe Moser},
+journal = {Opt. Express},
+keywords = {3D printing; Computed tomography; Liquid crystal displays; Material properties; Ray tracing; Refractive index},
+number = {8},
+pages = {14705--14712},
+publisher = {Optica Publishing Group},
+title = {Wave optical model for tomographic volumetric additive manufacturing},
+volume = {32},
+month = {Apr},
+year = {2024},
+url = {https://opg.optica.org/oe/abstract.cfm?URI=oe-32-8-14705},
+doi = {10.1364/OE.521322},
 }
 ```
 """
