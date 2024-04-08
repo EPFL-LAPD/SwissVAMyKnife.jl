@@ -45,13 +45,13 @@ This means that there is 30 `png` images in the folder `path` and each image has
 The function will insert them into an array full of zeos of size `180x180` and stack them together to a 3D array.
 
 """
-function load_image_stack(sz, sz_file, path)
+function load_image_stack(sz, sz_file, path, prefix="boat", pad=2)
 
 	target = zeros(Float32, sz)
 	#@show size(load(joinpath(path, string("slice_", string(1, pad=3) ,".png"))))
 	
 	for i in 0:sz_file[1]-1
-		target[:, :, 5 + i+1] .= select_region(Gray.(load(joinpath(path, string("boat_", string(i, pad=2) ,".png")))), new_size=(sz))
+		target[:, :, 5 + i+1] .= select_region(Gray.(load(joinpath(path, string(prefix, string(i, pad=pad) ,".png")))), new_size=(sz))
 	end
 
 	target2 = select_region(target, new_size=sz)
