@@ -74,7 +74,7 @@ Also it avoids that the patterns are too sparse with a regularization term.
 * The default `K=2` corresponds to `sum_f=abs2`.
 * `(T_L, T_U) = thresholds`
 * `λ` is a regularization term weight to avoid sparse patterns.
-* `sparsity_sum_f` is the sum function to compute the sparsity of the patterns.
+* `sparsity_sum_f` is the sum function to compute the sparsity of the patterns. Default `x -> x^4`.
 
 """
 struct LossThresholdSparsity{F, T, F2} <: LossTarget 
@@ -82,7 +82,7 @@ struct LossThresholdSparsity{F, T, F2} <: LossTarget
     thresholds::Tuple{T, T}
     λ::T
     sparsity_sum_f::F2
-    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-4, sparsity_sum_f=abs2)
+    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-9, sparsity_sum_f=x -> x^4)
         return new{typeof(sum_f), typeof(thresholds[1]), typeof(sparsity_sum_f)}(sum_f, thresholds, λ, sparsity_sum_f)
     end
 end
