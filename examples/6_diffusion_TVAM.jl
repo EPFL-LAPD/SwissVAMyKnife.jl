@@ -112,13 +112,13 @@ angles = range(0, 2π, 151)[begin:end-1]
 geometry = ParallelRayOptics(angles, nothing)
 
 # ╔═╡ aeadc55a-6601-403a-b9cd-a3c6639cb15b
-diffusion = Diffusion(25f-6, 1f-10, 0.00001f0, 1, 1)
+diffusion = Diffusion(25f-6, 1f-10, 40f0, 3, 5)
 
 # ╔═╡ 43136316-d95d-47e5-bfbb-45443ae615cd
 optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=20, store_trace=true))
 
 # ╔═╡ a7d4db4f-94b8-444a-846a-6e2ebfa5f368
-md"# 3. Optimize"
+md"# 3. Optimize with Diffusion and without"
 
 # ╔═╡ 00004b83-427a-4704-bf13-c240ce4870fe
 @mytime patterns, printed_intensity, optim_res = optimize_patterns(togoc(target),
@@ -131,17 +131,11 @@ optim_res
 @mytime patterns2, printed_intensity2, optim_res2 = optimize_patterns(togoc(target),
 	geometry, diffusion, optimizer, loss)
 
-# ╔═╡ 6102744b-6040-434c-83d5-59131fa86aaf
-Revise.errors()
-
 # ╔═╡ 5d1b390d-175a-47f5-a8e9-ca8212eca646
 optim_res2
 
 # ╔═╡ 0cc85f47-068f-49f9-9701-0fcd9334f178
 md"# 4. Inspect"
-
-# ╔═╡ e39ef157-ac52-4001-9569-27e3e8f32244
-md"The intersection over union is: $(round(calculate_IoU(togoc(target), printed_intensity .> 0.98), digits=3))"
 
 # ╔═╡ b48ff258-5163-42b5-9168-0ccab5ab10dc
 md"Choose threshold for image: $(@bind thresh4 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.7))"
@@ -174,7 +168,9 @@ simshow(Array(patterns[:,angle,:])[end:-1:begin, :]', cmap=:turbo, set_one=true)
 simshow(Array(patterns2[:,angle,:])[end:-1:begin, :]', cmap=:turbo, set_one=true)
 
 # ╔═╡ 9a9051e1-03bf-4e76-85dc-8b07d35c6ca1
-md"# 5. Compare to non Diffusion"
+md"# 5. Compare to non Diffusion
+Propagate the non diffusion patterns with the diffusion model
+"
 
 # ╔═╡ c1bcdafe-e03a-4403-9911-b6084c4cd539
 fwd_diffusion, _ = SwissVAMyKnife._prepare_ray_forward(togoc(target), geometry, diffusion)
@@ -230,18 +226,16 @@ printend_intensity_without_diff = fwd_diffusion(patterns ./ diffusion.N_rotation
 # ╠═5e6ae68e-5dd7-4e26-84ad-f5ef7fd4b970
 # ╠═aeadc55a-6601-403a-b9cd-a3c6639cb15b
 # ╠═43136316-d95d-47e5-bfbb-45443ae615cd
-# ╠═a7d4db4f-94b8-444a-846a-6e2ebfa5f368
+# ╟─a7d4db4f-94b8-444a-846a-6e2ebfa5f368
 # ╠═00004b83-427a-4704-bf13-c240ce4870fe
 # ╠═e5a8c428-1dca-42df-87f7-3c429f29b61a
 # ╠═985bf921-4783-4f0f-99c8-c08cb772e2f8
-# ╠═6102744b-6040-434c-83d5-59131fa86aaf
 # ╠═5d1b390d-175a-47f5-a8e9-ca8212eca646
 # ╠═0cc85f47-068f-49f9-9701-0fcd9334f178
-# ╠═e39ef157-ac52-4001-9569-27e3e8f32244
-# ╠═b48ff258-5163-42b5-9168-0ccab5ab10dc
-# ╠═a5c3f411-42f8-401b-b0b2-380dc9b57bfa
+# ╟─b48ff258-5163-42b5-9168-0ccab5ab10dc
+# ╟─a5c3f411-42f8-401b-b0b2-380dc9b57bfa
 # ╠═0d665c2b-7e6c-4af4-afeb-cee2db582a02
-# ╠═5f8ae887-5d69-41bc-9601-8894f8557ffd
+# ╟─5f8ae887-5d69-41bc-9601-8894f8557ffd
 # ╠═44b67acf-b31f-4cd1-b675-475a81e8ed85
 # ╠═b9636f03-e822-4b7f-8639-ae8ec3bd1d78
 # ╠═d1ee51c2-e30e-4a4e-976d-7322a879d35e
@@ -253,6 +247,6 @@ printend_intensity_without_diff = fwd_diffusion(patterns ./ diffusion.N_rotation
 # ╠═37320779-2cfd-44e5-a258-6cec54ba1a38
 # ╟─2fe8b777-1867-44b3-905f-6f9079d38f1a
 # ╟─966b4aa1-ddc2-4fd4-98d0-f571ca67c8d1
-# ╠═6da2ab24-8817-4873-8006-bee30ddf4b2e
+# ╟─6da2ab24-8817-4873-8006-bee30ddf4b2e
 # ╠═ba5ff89a-f569-4a70-9205-7dbde326df4b
 # ╠═db4c7a5c-1395-4566-912d-5150503ce1a7
