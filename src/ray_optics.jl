@@ -1,6 +1,6 @@
 export ParallelRayOptics, VialRayOptics
 export Polarization, PolarizationParallel, PolarizationPerpendicular, PolarizationRandom
-
+export Diffusion
 
 """
     Polarization
@@ -131,6 +131,14 @@ end
 
 
 
+@with_kw struct Diffusion{T}
+    voxel_size::T=100f-6
+    D::T=1f-10
+    printing_time::T=40f0
+    N_rotations::Int=3
+    diffusion_steps_per_rotation::Int=3
+end
+
 """
     optimize_patterns(target, ps::{VialRayOptics, ParallelRayOptics}, op::GradientBased, loss::LossTarget)
 
@@ -156,12 +164,14 @@ julia> patterns, printed_intensity, res = optimize_patterns(target, VialRayOptic
                      ), GradientBased(), LossThreshold())
 ```
 """
-function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, ParallelRayOptics}, op::GradientBased, loss::LossTarget) where T
+function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, ParallelRayOptics}, diffusion::Union{Nothing, Diffusion},
+                           op::GradientBased, loss::LossTarget) where T
     if T == Float64 && target isa CuArray
         @warn "Target seems to be Float64. For CUDA it is recommended to use a Float32 element type"
     end
 
-    fwd, pat0 = _prepare_ray_forward(target, ps)
+    # diffusion is either nothing or Diffusion
+    fwd, pat0 = _prepare_ray_forward(target, ps, diffusion)
     # create loss evaluation and gradient function
     fg! = make_fg!(fwd, target, loss)
     
@@ -180,7 +190,52 @@ end
 
 
 
-function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics) where T
+function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, ParallelRayOptics},
+                           op::GradientBased, loss::LossTarget) where T
+    return optimize_patterns(target, ps, nothing, op, loss)
+end
+
+function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics, diff::Diffusion) where T
+    geometry = RadonParallelCircle(size(target, 1), -(size(target,1) -1)÷2:1:(size(target,1) -1)÷2)
+    pat0 = radon(target, ps.angles, μ=ps.μ, geometry=geometry)
+    
+    @assert length(ps.angles) % diff.diffusion_steps_per_rotation == 0 "Number of angles must be divisible by diffusion_steps_per_rotation"
+    p = plan_rfft(similar(target), (1,2,3))
+    kernel = similar(target)
+    Δt = diff.printing_time / diff.N_rotations / diff.diffusion_steps_per_rotation
+
+    kernel .= exp.(.- rr2(T, size(target), scale=diff.voxel_size) ./ (4 * T(π) * diff.D * Δt))
+    kernel ./= sum(kernel)
+    kernel_fft = p * ifftshift(kernel, (1,2,3))
+
+    fwd = let angles=ps.angles, μ=ps.μ, geometry=geometry, kernel_fft=kernel_fft, target=target, p=p, pinv=inv(p)
+        function fwd(x)
+            out = 0 .* target
+            f(j) = begin
+                N_angles_d = length(angles) ÷ diff.diffusion_steps_per_rotation
+                angle_range = 1 + (j-1) * N_angles_d : j * N_angles_d
+                return backproject(NNlib.relu.(view(x, :, angle_range, :) ./ N_angles_d),
+                                                          angles[angle_range];
+                                                          μ, geometry)
+            end
+
+            backprojections = [f(j) for j in 1:diff.diffusion_steps_per_rotation]
+
+            for i in 1:diff.N_rotations
+                for j in 1:diff.diffusion_steps_per_rotation
+                    # FFT based convolution
+                    #@show typeof(out), typeof(kernel_fft), typeof(backprojected)
+                    out = (pinv.p * ((p * (out .+ backprojections[j])) .* kernel_fft .* pinv.scale))
+                end
+            end
+            return out
+        end
+    end
+    return fwd, pat0
+end
+
+
+function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics, ::Nothing) where T
     geometry = RadonParallelCircle(size(target, 1), -(size(target,1) -1)÷2:1:(size(target,1) -1)÷2)
     pat0 = radon(target, ps.angles, μ=ps.μ, geometry=geometry)
     fwd = let angles=ps.angles, μ=ps.μ, geometry=geometry
@@ -191,7 +246,7 @@ end
 
 
 
-function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics) where T
+function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics, ::Nothing) where T
 
     N = iseven(size(target, 1)) ? T(size(target, 1) - 1) : T(size(target, 1))
     radius_pixel = T(N / 2)
