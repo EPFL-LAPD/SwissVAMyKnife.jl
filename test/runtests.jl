@@ -9,14 +9,25 @@ using ChainRulesTestUtils
 
     sz2 = (32, 32, 2)
     target2 = box(Float32, sz2, (17, 17, 1)) .-  box(Float32, sz2, (9, 9, 1));
-    angles2 = range(0, 2π, 64)
-    optimizer2 = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=10, store_trace=true))
+    angles2 = range(0, 2π, 60)
+    optimizer2 = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=25, store_trace=true))
     geometry2 = ParallelRayOptics(angles2, nothing)
 
 
     @test target2 == (0.7 .< optimize_patterns((target2), geometry2, optimizer2, LossThreshold(thresholds=(0.65, 0.75)))[2])
     @test target2 == (0.7 .< optimize_patterns((target2), geometry2, OSMO(iterations=50, thresholds=(0.65, 0.75)))[2])
     @test target2 == (0.45 .< optimize_patterns((target2), geometry2, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))[2])
+
+
+    @testset "Diffusion" begin 
+        diffusion = Diffusion(1000000f0, 1f-25, 0.0001f0, 1, 1)
+        pat1 = optimize_patterns((target2), geometry2, diffusion, optimizer2, LossThreshold(thresholds=(0.65, 0.75)))[1]
+        pat2 = optimize_patterns((target2), geometry2, optimizer2, LossThreshold(thresholds=(0.65, 0.75)))[1] 
+        @test (all(.≈(1 .+ pat1, 1 .+ pat2, rtol=0.1)))
+        diffusion = Diffusion(100f-6, 1f-10, 20f0, 3, 5)
+        @test target2 == (0.45 .< optimize_patterns((target2), geometry2, diffusion, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))[2])
+    end
+
 
     geometry_vial = VialRayOptics(
     	angles=angles2,
@@ -37,6 +48,7 @@ using ChainRulesTestUtils
     patterns, printed, res = optimize_patterns((target2), geometry_vial, optimizer2, LossThreshold(thresholds=(0.4, 0.5)))
     save_patterns(tempdir(), patterns, printed, angles2, target2; overwrite=true)
 end
+
 
 
 @testset "Simple wave optical simulation" begin

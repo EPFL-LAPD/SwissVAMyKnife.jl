@@ -195,6 +195,11 @@ function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, Pa
     return optimize_patterns(target, ps, nothing, op, loss)
 end
 
+
+"""
+
+inspired by: https://www.nature.com/articles/s41467-023-39886-4
+"""
 function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics, diff::Diffusion) where T
     geometry = RadonParallelCircle(size(target, 1), -(size(target,1) -1)÷2:1:(size(target,1) -1)÷2)
     pat0 = radon(target, ps.angles, μ=ps.μ, geometry=geometry)
@@ -214,7 +219,7 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics, d
             f(j) = begin
                 N_angles_d = length(angles) ÷ diff.diffusion_steps_per_rotation
                 angle_range = 1 + (j-1) * N_angles_d : j * N_angles_d
-                return backproject(NNlib.relu.(view(x, :, angle_range, :) ./ N_angles_d),
+                return backproject(NNlib.relu.(view(x, :, angle_range, :) ./ length(angles)),
                                                           angles[angle_range];
                                                           μ, geometry)
             end
@@ -224,7 +229,6 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics, d
             for i in 1:diff.N_rotations
                 for j in 1:diff.diffusion_steps_per_rotation
                     # FFT based convolution
-                    #@show typeof(out), typeof(kernel_fft), typeof(backprojected)
                     out = (pinv.p * ((p * (out .+ backprojections[j])) .* kernel_fft .* pinv.scale))
                 end
             end
