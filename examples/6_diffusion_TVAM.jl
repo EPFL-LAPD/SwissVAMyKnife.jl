@@ -175,6 +175,15 @@ Propagate the non diffusion patterns with the diffusion model
 # ╔═╡ c1bcdafe-e03a-4403-9911-b6084c4cd539
 fwd_diffusion, _ = SwissVAMyKnife._prepare_ray_forward(togoc(target), geometry, diffusion)
 
+# ╔═╡ 48fb1a90-d410-40e2-8d5f-9b5714b611f0
+printend_intensity_without_diff = fwd_diffusion(patterns ./ diffusion.N_rotations);
+
+# ╔═╡ 37320779-2cfd-44e5-a258-6cec54ba1a38
+# ╠═╡ disabled = true
+#=╠═╡
+printend_intensity_without_diff = fwd_diffusion(patterns2);
+  ╠═╡ =#
+
 # ╔═╡ 2fe8b777-1867-44b3-905f-6f9079d38f1a
 md"Choose threshold for image: $(@bind thresh5 PlutoUI.Slider(0:0.01:1, show_value=true, default=0.7))"
 
@@ -192,15 +201,6 @@ plot_intensity_histogram(target, printend_intensity_without_diff, loss.threshold
 
 # ╔═╡ db4c7a5c-1395-4566-912d-5150503ce1a7
 Δt = 40 / 3 / 3
-
-# ╔═╡ 37320779-2cfd-44e5-a258-6cec54ba1a38
-# ╠═╡ disabled = true
-#=╠═╡
-printend_intensity_without_diff = fwd_diffusion(patterns2);
-  ╠═╡ =#
-
-# ╔═╡ 48fb1a90-d410-40e2-8d5f-9b5714b611f0
-printend_intensity_without_diff = fwd_diffusion(patterns ./ diffusion.N_rotations);
 
 # ╔═╡ Cell order:
 # ╟─8d4ea5a5-3f98-4481-ac16-3fda7ccec3bb
