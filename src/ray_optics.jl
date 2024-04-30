@@ -178,11 +178,17 @@ function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, Pa
     # optimize
     # very low initialization
     # 0 fails with optim
-    pat0 .= 0.001
+    
+    filter = similar(pat0, (size(pat0, 1),))
+    filter .= rr(T, (size(pat0, 1), )) 
+
+    p = plan_fft(similar(pat0), (1,))
+    pat0 = NNlib.relu(real(inv(p) * (p * pat0 .* ifftshift(filter))))
+    #pat0 .= 0.001
     res = Optim.optimize(Optim.only_fg!(fg!), pat0, op.optimizer, op.options)
     
     # post processing
-    patterns = NNlib.relu(res.minimizer) 
+    patterns = (res.minimizer) 
     printed_intensity = fwd(res.minimizer) 
     return patterns, printed_intensity, res
     # return permutedims(patterns, (3,2,1)), printed_intensity, res

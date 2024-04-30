@@ -54,10 +54,8 @@ Define an efficient function `fg!` for the interface of Optim.jl
 Internal method, do not use.
 """
 function make_fg!(fwd, target, loss)
-    mask = similar(target, Bool, (size(target, 1), size(target, 2)))
-	mask[:, :] .= rr2(eltype(target), (size(target)[1:2]..., )) .<= (size(target, 1) ÷ 2  - 1)^2
 
-    f = let loss=loss, fwd=fwd, target= (target .≈ 1)
+    f = let loss=loss, fwd=fwd, target=target
         function f(x::AbstractArray{T}) where T
             return loss(fwd(x), target, x)
 		end

@@ -1,4 +1,4 @@
-export LossTarget, LossThreshold, LossThresholdSparsity 
+export LossTarget, LossThreshold, LossThresholdSparsity , LossGrayScale
 
 """
     LossTarget
@@ -57,6 +57,12 @@ struct LossThreshold{F, T} <: LossTarget
     end
 end
 
+
+struct LossGrayScale <: LossTarget end
+
+@inline function (l::LossGrayScale)(x::AbstractArray{T}, target, patterns) where T
+    return sum(abs2, (x .- target) .* (target .> 0))
+end
 
 
 """
