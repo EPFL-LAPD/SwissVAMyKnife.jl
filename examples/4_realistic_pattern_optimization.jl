@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.38
+# v0.19.42
 
 using Markdown
 using InteractiveUtils
@@ -83,7 +83,7 @@ md"# 2. Specify Optimization Parameters"
 loss = LossThreshold(thresholds=(0.65, 0.75))
 
 # ╔═╡ e5bec833-47c5-4f65-8667-f28d4ccb1fbc
-angles = range(0, 2π, 301)[begin:end-1]
+angles = range(0, 2π, 1001)[begin:end-1]
 
 # ╔═╡ e45eeeed-a86e-40e1-b4a2-e4c25cc6a368
 optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=20, store_trace=true))
@@ -91,13 +91,21 @@ optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterati
 # ╔═╡ f618cc32-6851-42de-b2c2-0ddc70b4668d
 geometry_vial = VialRayOptics(
 	angles=angles,
-	μ=2/550,
+	μ=2 / 14.6e-3,
 	R_outer=(16.60e-3) / 2,
 	R_inner=(15.2e-3) / 2,
 	DMD_diameter=14.6e-3,
 	n_vial=1.47,
 	n_resin=1.4849
 )
+
+# ╔═╡ 29bbf20e-da89-42af-b7a0-a921c1c5fe3f
+md"
+In this case the DMD is smaller than the glass vial.
+That means, our DMD area is smaller than the simulated target volume.
+The resulting pattern size is: $(floor(Int, (14.6e-3 / 16.6e-3) * size(target, 1))) pixels
+
+"
 
 # ╔═╡ 3dfccb9a-8f21-4695-965c-c1d97077ba52
 md"# 3. Optimize"
@@ -138,12 +146,12 @@ md"Different projection patterns: $(@bind angle PlutoUI.Slider(axes(patterns_via
 simshow(Array(patterns_vial[:,angle,:])[end:-1:begin, :]', cmap=:turbo, set_one=true)
 
 # ╔═╡ Cell order:
-# ╠═c973ccfd-11b7-4e0a-9d1a-32b0d449bfd1
+# ╟─c973ccfd-11b7-4e0a-9d1a-32b0d449bfd1
 # ╠═32d9b7b4-bacd-48c5-8ac5-a7d16bc26f3f
 # ╠═fb00f77e-3a43-43c6-83f5-ab9ffa690585
 # ╠═2a2c5c57-3b51-463b-90b3-bf4733df1c71
 # ╠═9122b9a9-43f4-48be-88f6-6d02a110f900
-# ╠═5c3dda08-010e-4d76-bf35-1c3385a2a0c0
+# ╟─5c3dda08-010e-4d76-bf35-1c3385a2a0c0
 # ╠═efc9b013-0452-482f-9112-d444d2197ba9
 # ╠═54e9b00d-2589-430e-9ac9-ffdb48a54c0e
 # ╠═93591474-679b-4944-a673-616cb5f354e0
@@ -152,13 +160,14 @@ simshow(Array(patterns_vial[:,angle,:])[end:-1:begin, :]', cmap=:turbo, set_one=
 # ╠═5e2ffa51-c23b-4223-89f8-dfa138cfaca5
 # ╠═9aa5e2c5-f0d0-43dc-9c3a-b4cebc5bb100
 # ╠═6869714a-040b-4694-b099-8962445daa33
-# ╠═e7715af7-de78-4668-9733-487f482ac3ef
+# ╟─e7715af7-de78-4668-9733-487f482ac3ef
 # ╠═018120f1-8859-4606-ac62-507fbcaf4097
-# ╠═f1cbc5fd-8454-430c-9267-73c67eca623b
+# ╟─f1cbc5fd-8454-430c-9267-73c67eca623b
 # ╠═3f00e0e5-2d87-406c-9e4a-42b76c3bf2ec
 # ╠═e5bec833-47c5-4f65-8667-f28d4ccb1fbc
 # ╠═e45eeeed-a86e-40e1-b4a2-e4c25cc6a368
 # ╠═f618cc32-6851-42de-b2c2-0ddc70b4668d
+# ╟─29bbf20e-da89-42af-b7a0-a921c1c5fe3f
 # ╠═3dfccb9a-8f21-4695-965c-c1d97077ba52
 # ╠═2350dd2f-11dd-4b81-93b0-a05e88dd0fa7
 # ╠═6eb9c0bc-2aa7-470d-96ca-3716c3c75e4e

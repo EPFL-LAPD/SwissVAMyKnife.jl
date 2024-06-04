@@ -23,7 +23,6 @@ Forward model is the (attenuated) Radon transform.
 
 - `angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
 - `μ` is the absorption coefficient of the resin in units of pixels.
-- So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
 - `R_outer` is the outer radius of the glass vial.
 - `R_inner` is the inner radius of the glass vial.
 - `camera_diameter` is the diameter of the camera along the vial radius. So this is not the height along the rotation axis!
@@ -60,7 +59,7 @@ end
 
 
 """
-    ParallelRayOptics(angles, μ)
+    ParallelRayOptics(angles, μ, DMD_diameter)
 
 Type to represent the parallel ray optical approach.
 This is suited for a printer with an index matching bath.
@@ -68,8 +67,9 @@ This is equivalent to an inverse (attenuated) Radon transform as the forward mod
 
 
 - `angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
-- `μ` is the absorption coefficient of the resin in units of pixels.
-   So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
+- `DMD_diameter` is the diameter of the DMD along the vial radius. So this is not the height along the rotation axis!
+- `μ` is the absorption coefficient of the resin in units of inverse meters
+   So `μ=100.0 1/m` means that after 10mm of propagation the intensity is `I(10mm) = I_0 * exp(-10.0mm * 100.0/m) = I_0 * exp(-1)`.
 
 See also [`VialRayOptics`](@ref) for a printer without index matching bath.
 
@@ -82,9 +82,10 @@ julia> ParallelRayOptics(range(0, 2π, 401)[begin:end-1], nothing)
 ParallelRayOptics{Nothing, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}}(0.0:0.015707963267948967:6.267477343911637, nothing)
 ```
 """
-struct ParallelRayOptics{T, A} <: PropagationScheme
+@with_kw struct ParallelRayOptics{T, A, ToN} <: PropagationScheme
     angles::A
-    μ::T
+    DMD_diameter::T
+    μ::ToN=nothing
 end
 
 
@@ -95,8 +96,8 @@ This is equivalent to an inverse (attenuated) Radon transform as the forward mod
 
 
 - `angles` is a range or `Vector` (or `CuVector`) storing the illumination angles.
-- `μ` is the absorption coefficient of the resin in units of pixels.
-- So `μ=0.1` means that after ten pixels of propagation the intensity is `I(10) = I_0 * exp(-10 * 0.1)`.
+- `μ` is the absorption coefficient of the resin in units of inverse meters
+   So `μ=100.0 1/m` means that after 10mm of propagation the intensity is `I(10mm) = I_0 * exp(-10.0mm * 100.0/m) = I_0 * exp(-1)`.
 - `R_outer` is the outer radius of the glass vial.
 - `R_inner` is the inner radius of the glass vial.
 - `DMD_diameter` is the diameter of the DMD along the vial radius. So this is not the height along the rotation axis!
@@ -213,7 +214,8 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics, d
     kernel ./= sum(kernel)
     kernel_fft = p * ifftshift(kernel, (1,2,3))
 
-    fwd = let angles=ps.angles, μ=ps.μ, geometry=geometry, kernel_fft=kernel_fft, target=target, p=p, pinv=inv(p)
+    μ_pixels = isnothing(ps.μ) ? nothing : T(ps.μ * ps.DMD_diameter / size(target, 1))
+    fwd = let angles=ps.angles, μ_pixels=μ_pixels, geometry=geometry, kernel_fft=kernel_fft, target=target, p=p, pinv=inv(p)
         function fwd(x)
             out = 0 .* target
             f(j) = begin
@@ -221,7 +223,7 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics, d
                 angle_range = 1 + (j-1) * N_angles_d : j * N_angles_d
                 return backproject(NNlib.relu.(view(x, :, angle_range, :) ./ length(angles)),
                                                           angles[angle_range];
-                                                          μ, geometry)
+                                                          μ=μ_pixels, geometry)
             end
 
             backprojections = [f(j) for j in 1:diff.diffusion_steps_per_rotation]
@@ -241,9 +243,10 @@ end
 
 function _prepare_ray_forward(target::AbstractArray{T}, ps::ParallelRayOptics, ::Nothing) where T
     geometry = RadonParallelCircle(size(target, 1), -(size(target,1) -1)÷2:1:(size(target,1) -1)÷2)
-    pat0 = radon(target, ps.angles, μ=ps.μ, geometry=geometry)
-    fwd = let angles=ps.angles, μ=ps.μ, geometry=geometry
-        fwd(x) = backproject(NNlib.relu.(x) ./ length(angles), angles; μ, geometry)
+    μ_pixels = isnothing(ps.μ) ? nothing : T(ps.μ * ps.DMD_diameter / size(target, 1))
+    pat0 = radon(target, ps.angles, μ=μ_pixels, geometry=geometry)
+    fwd = let angles=ps.angles, μ_pixels=μ_pixels, geometry=geometry
+        fwd(x) = backproject(NNlib.relu.(x) ./ length(angles), angles; μ=μ_pixels, geometry)
     end
     return fwd, pat0
 end
@@ -275,11 +278,12 @@ function _prepare_ray_forward(target::AbstractArray{T}, ps::VialRayOptics, ::Not
     geometry = RadonFlexibleCircle(size(target, 1), in_height, out_height, weights)
 
     # create forward model
-    fwd = let angles=ps.angles, μ=ps.μ, geometry=geometry
-        fwd(x) = backproject(NNlib.relu.(x) ./ length(angles), angles; μ, geometry)
+    μ_pixels = isnothing(ps.μ) ? nothing : T(ps.μ * ps.DMD_diameter / length(heights)) 
+    fwd = let angles=ps.angles, μ_pixels=μ_pixels, geometry=geometry
+        fwd(x) = backproject(NNlib.relu.(x) ./ length(angles), angles; μ=μ_pixels, geometry)
     end
 
-    pat0 = radon(target, ps.angles; μ=ps.μ, geometry)
+    pat0 = radon(target, ps.angles; μ=μ_pixels, geometry)
     return fwd, pat0
 end
 
