@@ -59,6 +59,8 @@ end
 
 
 
+my_power_four(x) = x^4
+
 """
     LossThresholdSparsity(;sum_f=abs2, thresholds=(0.65f0, 0.75f0), λ=0.001f0)
 
@@ -82,7 +84,7 @@ struct LossThresholdSparsity{F, T, F2} <: LossTarget
     thresholds::Tuple{T, T}
     λ::T
     sparsity_sum_f::F2
-    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-9, sparsity_sum_f=x -> x^4)
+    function LossThresholdSparsity(; sum_f=abs2, thresholds=(0.8f0, 0.9f0), λ=1f-9, sparsity_sum_f=my_power_four)
         return new{typeof(sum_f), typeof(thresholds[1]), typeof(sparsity_sum_f)}(sum_f, thresholds, λ, sparsity_sum_f)
     end
 end
@@ -94,6 +96,7 @@ function (l::LossThresholdSparsity)(x::AbstractArray{T}, target, patterns) where
                            l.sum_f.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))) .+ 
                            T(l.λ) .* sum(l.sparsity_sum_f, patterns))
 end
+
 
 
 """
@@ -121,7 +124,8 @@ end
     custom rules for the abs2 loss function (default).
     no real speed gain but much less memory consumption 
 """
-function ChainRulesCore.rrule(l::LossThreshold{typeof(abs2), TT}, x::AbstractArray{T}, target, patterns) where {T, TT}
+function ChainRulesCore.rrule(l::LossThreshold{typeof(abs2), TT}, x::AbstractArray{T},
+                              target, patterns) where {T, TT}
     res = l(x, target, patterns)
     function pb(y)
         y = unthunk(y)
@@ -129,6 +133,25 @@ function ChainRulesCore.rrule(l::LossThreshold{typeof(abs2), TT}, x::AbstractArr
                                   (SwissVAMyKnife.NNlib.relu.(x .- Int(1))                .* target) .+ 
                                   (SwissVAMyKnife.NNlib.relu.(x .- T(l.thresholds[1])) .* (1 .- target))))
         return NoTangent(), g, NoTangent(), NoTangent()
+    end
+    return res, pb
+end
+
+
+"""
+    custom rules for the abs2 loss function (default).
+    no real speed gain but much less memory consumption 
+"""
+function ChainRulesCore.rrule(l::LossThresholdSparsity{typeof(abs2), TT, typeof(my_power_four)}, 
+                              x::AbstractArray{T}, target, patterns) where {T, TT}
+    res = l(x, target, patterns)
+    function pb(y)
+        y = unthunk(y)
+        g = @inbounds (2 .* y .* ((.- SwissVAMyKnife.NNlib.relu.(T(l.thresholds[2]) .- x) .* target) .+  
+                                  (SwissVAMyKnife.NNlib.relu.(x .- Int(1))                .* target) .+ 
+                                  (SwissVAMyKnife.NNlib.relu.(x .- T(l.thresholds[1])) .* (1 .- target))))
+        b = @inbounds (4 .* y .* l.λ .* patterns.^3)
+        return NoTangent(), g, NoTangent(), b
     end
     return res, pb
 end
