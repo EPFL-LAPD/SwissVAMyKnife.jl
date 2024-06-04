@@ -69,7 +69,7 @@ Also it avoids that the patterns are too sparse with a regularization term.
 \$\$\\mathcal{L} = \\underbrace{\\sum_{v \\,\\in\\,\\text{object}} |\\text{ReLu}(T_U - I_v)|^K}_\\text{force object polymerization} + \$\$
 \$\$+\\underbrace{\\sum_{v\\,\\notin\\,\\text{object}} |\\text{ReLu}(I_v - T_L) |^K}_{\\text{keep empty space unpolymerized}} +\$\$
 \$\$+\\underbrace{\\sum_{v \\,\\in\\,\\text{object}} |\\text{ReLu}(I_v - 1)|^K}_{\\text{avoid overpolymerization}}\$\$
-\$\$+\\underbrace{\\sum_{p \\,\\in\\,\\text{patterns}} |P_p)|^4}_{\\text{avoid sparse patterns}}\$\$
+\$\$+\\lambda \\cdot \\underbrace{\\sum_{p \\,\\in\\,\\text{patterns}} |P_p)|^4}_{\\text{avoid sparse patterns}}\$\$
 
 * The default `K=2` corresponds to `sum_f=abs2`.
 * `(T_L, T_U) = thresholds`
