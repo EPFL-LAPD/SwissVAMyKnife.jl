@@ -168,7 +168,7 @@ simshow(Array(patterns_vial[:,angle,:])[end:-1:begin, :]', cmap=:turbo, set_one=
 # ╠═e45eeeed-a86e-40e1-b4a2-e4c25cc6a368
 # ╠═f618cc32-6851-42de-b2c2-0ddc70b4668d
 # ╟─29bbf20e-da89-42af-b7a0-a921c1c5fe3f
-# ╠═3dfccb9a-8f21-4695-965c-c1d97077ba52
+# ╟─3dfccb9a-8f21-4695-965c-c1d97077ba52
 # ╠═2350dd2f-11dd-4b81-93b0-a05e88dd0fa7
 # ╠═6eb9c0bc-2aa7-470d-96ca-3716c3c75e4e
 # ╟─819bb337-ef70-4088-82da-bda208264b30
