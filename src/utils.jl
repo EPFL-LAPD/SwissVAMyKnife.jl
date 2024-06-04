@@ -196,3 +196,16 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
     return 0
 end
 
+
+const start_time = Ref(zeros(1))
+const last_time = Ref(zeros(1))
+function log_time(x)
+    if x[end].iteration == 0
+        start_time[] .= time()
+        last_time[] .= time()
+    end
+    @info "Iteration:\t$(x[end].iteration),\t total time:\t$(round(time()-start_time[][1], digits=2))s,\ttime since last iteration:\t$(round(time()-last_time[][1], digits=2))s"
+
+    last_time[] .= time()
+    return false
+end

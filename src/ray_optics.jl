@@ -180,6 +180,9 @@ function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, Pa
     # very low initialization
     # 0 fails with optim
     pat0 .= 0.001
+    
+    string_var = pat0 isa CuArray ? "CUDA" : "CPU"
+    @info "Pattern optimization starts on $(string_var) with size $(size(pat0)[1:2:3]) and $(length(ps.angles)) angles."
     res = Optim.optimize(Optim.only_fg!(fg!), pat0, op.optimizer, op.options)
     
     # post processing
