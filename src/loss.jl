@@ -91,8 +91,8 @@ end
 function (l::LossThresholdSparsity)(x::AbstractArray{T}, target, patterns) where T
      return @inbounds (sum(l.sum_f.(NNlib.relu.(T(l.thresholds[2]) .- x)    .* target) .+ 
                            l.sum_f.(NNlib.relu.(x .- T(1))                  .* target) .+
-                           l.sum_f.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))) + 
-                        T(l.λ) * sum(l.sparsity_sum_f, patterns))
+                           l.sum_f.(NNlib.relu.(x .- T(l.thresholds[1]))    .* (T(1) .- target))) .+ 
+                           T(l.λ) .* sum(l.sparsity_sum_f, patterns))
 end
 
 
