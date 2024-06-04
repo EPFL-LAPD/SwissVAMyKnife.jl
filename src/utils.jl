@@ -204,7 +204,7 @@ function log_time(x)
         start_time[] .= time()
         last_time[] .= time()
     end
-    @info "Iteration:\t$(x[end].iteration),\t total time:\t$(round(time()-start_time[][1], digits=2))s,\ttime since last iteration:\t$(round(time()-last_time[][1], digits=2))s"
+    @info "Iteration:\t$(x[end].iteration),\t total time:\t$(round(time()-start_time[][1], digits=2))s,\ttime since last iteration:\t$(round(time()-last_time[][1], digits=2))s, loss value: $(round(x[end].value, digits=4))"
 
     last_time[] .= time()
     return false
