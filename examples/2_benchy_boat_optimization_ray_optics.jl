@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.19.42
 
 using Markdown
 using InteractiveUtils
@@ -112,7 +112,7 @@ loss = LossThreshold(thresholds=(0.7, 0.8))
 angles = range(0, 2π, 201)[begin:end-1]
 
 # ╔═╡ 93cebf3f-389b-4fde-8d13-af3e1165ad9c
-geometry = ParallelRayOptics(angles, nothing)
+geometry = ParallelRayOptics(angles=angles, μ=nothing, DMD_diameter=Inf)
 
 # ╔═╡ 2ffbef8c-066d-49b6-8a29-1ef710099029
 optimizer = GradientBased(optimizer=Optim.LBFGS(), options=Optim.Options(iterations=40, store_trace=true))
