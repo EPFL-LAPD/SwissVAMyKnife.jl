@@ -172,7 +172,7 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
 
 
     # convert to proper Grayscale image
-    patterns = simshow(patterns, cmap=:turbo)
+    patterns = simshow(patterns, cmap=:gray)
     for i in 1:size(angles, 1)
         number = lpad(string(i), 5, "0")
         fname = joinpath(fpath_images, number * ".png")
