@@ -1,5 +1,5 @@
 export printing_errors, plot_intensity_histogram, save_patterns, calculate_IoU
-export load_example_target
+export load_example_target, load_image_stack
 
 """
     interpolate_patterns(patterns, N_angles)
@@ -35,28 +35,34 @@ end
 
 
 """
-    load_image_stack(sz, sz_file, path)
+    load_image_stack(sz, path, prefix="boat_", pad=2)
 
 Load the image stack from the path `path` and resize it to `sz`.
+The files should be binary images with 1s and 0s.
 
 Example:
-`sz=(180, 180, 180)`, `sz_file=`(100, 100, 30) and  and `path=`"path/to/images"
-This means that there is 30 `png` images in the folder `path` and each image has the size `100x100`.
-The function will insert them into an array full of zeos of size `180x180` and stack them together to a 3D array.
+This will load all images from path which have file names `boat_00.png`, `boat_01.png`, ...
+The output array will have size (128, 128, 100). `sz` shouldm be larger than the size of the images.
+
+```julia
+julia> load_image_stack((128, 128, 100), "path/to/images", prefix="boat_", pad=2)
+
+```
 
 """
-function load_image_stack(sz, sz_file, path, prefix="boat", pad=2)
+function load_image_stack(sz, path; prefix="boat", pad=2)
+    one_img = load(joinpath(path, string(prefix, string(0, pad=pad) ,".png")))
+    if any(size(one_img) .> sz[1:2]) || length(readdir(path)) > sz[3]
+        throw(ArgumentError("Size of object is larger than provided $(sz)"))
+    end
 
 	target = zeros(Float32, sz)
-	#@show size(load(joinpath(path, string("slice_", string(1, pad=3) ,".png"))))
-	
-	for i in 0:sz_file[1]-1
-		target[:, :, 5 + i+1] .= select_region(Gray.(load(joinpath(path, string(prefix, string(i, pad=pad) ,".png")))), new_size=(sz))
+
+    Threads.@threads for i in 0:length(readdir(path)) - 1
+		target[:, :, i+1] .= select_region(Gray.(load(joinpath(path, string(prefix, string(i, pad=pad) ,".png")))) .> 0, new_size=(sz))
 	end
 
-	target2 = select_region(target, new_size=sz)
-	target2 = permutedims(target2, (3,1,2))[end:-1:begin, :, :]
-	return target2
+	return target
 end
 
 
