@@ -8,9 +8,9 @@ As photo initiator we use TPO.
 With a refractometer we measure the refractive index $n_\text{resin} = 1.4849$.
 We pour the resin into a cup. The photoinitiator is mixed into Ethanol. This is shaken until the TPO is dissolved.
 The ethanol with the TPO is mixed into the resin. It is mixed in a Kurabo Planetary Mixer for some minutes. 
-In total, we mix roughly $15\mathrm{mg}$ of TPO into $40\mathrm{mL}$ of the resin.
-With a spectrometer, we determine the absorbance at our printing wavelength $405\mathrm{nm}$ to be $A=0.2347/1\mathrm{cm}$. That means, $\mu = 23.47\mathrm{m}^{-1}$
-Technically there is also absorption of the resin itself which does not contribute to the absorption but we determined it to be $A=1.92\mathrm{m}$.
+In total, we mix roughly $15\mathrm{mg}$ of TPO into $40\mathrm{L}$ of the resin.
+With a spectrometer, we determine the absorbance at our printing wavelength $405\mathrm{nm}$ to be $A=0.2347/1\mathrm{cm}$. That means, $\mu = 54.04\mathrm{m}^{-1}$
+Technically there is also absorption of the resin itself which does not contribute to the absorption but we determined it to be $A=1.92\mathrm{m^{-1}}$.
 So we neglect this effect and assume all absorbed light is contributing to the polymerization.
 ```@raw html
 <img src="../assets/container.jpeg" alt="" width="300"/>
@@ -19,7 +19,7 @@ So we neglect this effect and assume all absorbed light is contributing to the p
 ## Glass Vial
 As glass vials we use simple cylindrical glass vial which are not quite optimized for optical applications.
 With a measurement calliper we determine the router radius to be $R_\text{outer} = (8.3\pm0.01)\mathrm{mm}$ and the inner radius
-$R_\text{outer} = (7.6\pm 0.01)\mathrm{mm}$. The refractive index is roughly $n_\text{vial}=1.47$.
+$R_\text{outer} = (7.6\pm 0.01)\mathrm{mm}$. The refractive index is roughly $n_\text{vial}=1.58$.
 
 ```@raw html
 <img src="../assets/vial.jpeg" alt="" width="300"/>
