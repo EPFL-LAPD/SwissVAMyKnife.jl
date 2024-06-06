@@ -54,9 +54,10 @@ julia> load_image_stack((128, 128, 100), "path/to/images", prefix="boat_", pad=2
 """
 function load_image_stack(sz, path; prefix="boat_", pad=2)
     one_img = load(joinpath(path, string(prefix, string(0, pad=pad) ,".png")))
-    Nz = length(readdir(path)) 
+    Nz = length(readdir(path))
+    sz_object = (size(one_img, 1), size(one_img, 2), Nz)
     if any(size(one_img) .> sz[1:2]) || Nz > sz[3]
-        throw(ArgumentError("Size of object $((size(one_img), 1), size(one_img, 2), Nz)) is larger than provided $(sz)"))
+        throw(ArgumentError("Size of object $(sz_object) is larger than provided $(sz)"))
     end
 
 	target = zeros(Float32, sz)
