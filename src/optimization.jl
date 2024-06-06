@@ -53,7 +53,7 @@ end
 Define an efficient function `fg!` for the interface of Optim.jl
 Internal method, do not use.
 """
-function make_fg!(fwd, target, loss)
+function make_fg!(fwd, target, loss, pat0)
 
     f = let loss=loss, fwd=fwd, target=target
         function f(x::AbstractArray{T}) where T
@@ -61,14 +61,18 @@ function make_fg!(fwd, target, loss)
 		end
     end
 
+    backend = AutoTapir()
+    extras = prepare_gradient(f, backend, similar(pat0)) 
     # some Optim boilerplate to get gradient and loss as fast as possible
-    fg! = let f=f
+    fg! = let f=f, backend=backend, extras=extras
         function fg!(F, G, x) 
             # Zygote calculates both derivative and loss, therefore do everything in one step
             if G !== nothing
-                y, back = Zygote.withgradient(f, x)
+                # y, back = Zygote.withgradient(f, x)
+                y, gg = DifferentiationInterface.value_and_gradient!(f, G, backend, x, extras) 
+
                 # calculate gradient
-                G .= back[1]
+                # G .= back[1]
                 if F !== nothing
                     return y
                 end

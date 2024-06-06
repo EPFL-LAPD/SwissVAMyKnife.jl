@@ -174,7 +174,7 @@ function optimize_patterns(target::AbstractArray{T}, ps::Union{VialRayOptics, Pa
     # diffusion is either nothing or Diffusion
     fwd, pat0 = _prepare_ray_forward(target, ps, diffusion)
     # create loss evaluation and gradient function
-    fg! = make_fg!(fwd, target, loss)
+    fg! = make_fg!(fwd, target, loss, pat0)
     
     # optimize
     # very low initialization
