@@ -11,3 +11,18 @@ git-tree-sha1 = "183110988f70ed1d9711cba2d51f00b2ea60445b"
     [[3DBenchy_550.download]]
     url = "https://github.com/EPFL-LAPD/PrintingTargets/raw/main/3DBenchy_550.tar.gz"
     sha256 = "84365d8e385d7411ee4b1f1853fe27e9c5beed95e1e99316bbea78e8671182de"
+
+[3DBenchy_120_aspect_ratio]
+git-tree-sha1 = "0851f1a8f5e7846cc46a87c8b29a915af74b9c0d"
+
+    [[3DBenchy_120_aspect_ratio.download]]
+    url = "https://github.com/EPFL-LAPD/PrintingTargets/raw/main/3DBenchy_120_aspect_ratio.tar.gz"
+    sha256 = "a292b8595edf2e221171c477373a2e1885fac86a9914575e095698caa2c9dd12"
+
+[3DBenchy_450_aspect_ratio]
+git-tree-sha1 = "9dd10e6127eab249512b139880e066bedfc86ec3"
+
+    [[3DBenchy_450_aspect_ratio.download]]
+    url = "https://github.com/EPFL-LAPD/PrintingTargets/raw/main/3DBenchy_450_aspect_ratio.tar.gz"
+    sha256 = "ab991af22225b6566d697bca97cef86f3183441977a3c954b148de0d65f4ab8b"
+
