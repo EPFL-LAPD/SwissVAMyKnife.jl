@@ -10,6 +10,8 @@ function interpolate_patterns(patterns; N_angles, Nx, Ny)
 
 end
 
+
+
 """
     load_example_target(name)
 
@@ -50,15 +52,16 @@ julia> load_image_stack((128, 128, 100), "path/to/images", prefix="boat_", pad=2
 ```
 
 """
-function load_image_stack(sz, path; prefix="boat", pad=2)
+function load_image_stack(sz, path; prefix="boat_", pad=2)
     one_img = load(joinpath(path, string(prefix, string(0, pad=pad) ,".png")))
-    if any(size(one_img) .> sz[1:2]) || length(readdir(path)) > sz[3]
-        throw(ArgumentError("Size of object is larger than provided $(sz)"))
+    Nz = length(readdir(path)) 
+    if any(size(one_img) .> sz[1:2]) || Nz > sz[3]
+        throw(ArgumentError("Size of object $((size(one_img), 1), size(one_img, 2), Nz)) is larger than provided $(sz)"))
     end
 
 	target = zeros(Float32, sz)
 
-    Threads.@threads for i in 0:length(readdir(path)) - 1
+    Threads.@threads for i in 0:Nz - 1
 		target[:, :, i+1] .= select_region(Gray.(load(joinpath(path, string(prefix, string(i, pad=pad) ,".png")))) .> 0, new_size=(sz))
 	end
 
@@ -109,7 +112,7 @@ end
 
 
 """
-    plot_intensity_histogram(target, object_printed, thresholds)
+    plot_intensity_histogram(target, object_printed, thresholds; yscale=:log10, xlim=(0.0, 1.1)
 
 Plot an intensity histogram of the `printed_object`.
 `target` is the original binary target object.
@@ -172,6 +175,7 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
 
 
     # convert to proper Grayscale image
+    # simshow normalizes the whole stack to [0, 1]
     patterns = simshow(patterns, cmap=:gray)
     for i in 1:size(angles, 1)
         number = lpad(string(i), 5, "0")
@@ -189,7 +193,7 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
     # convert to proper Grayscale image
     printed = simshow(printed, cmap=:turbo)
     for i in 1:size(printed, 3)
-        number = lpad(string(i), 5, "0")
+        number = lpad(string(i - 1), 5, "0")
         fname = joinpath(fpath_images, number * ".png")
         if isfile(fname) && overwrite==false
             throw(ArgumentError("png file exists already"))
@@ -205,6 +209,12 @@ end
 
 const start_time = Ref(zeros(1))
 const last_time = Ref(zeros(1))
+"""
+    log_time(x)
+
+Used as callback within Optim.jl to print the time of each iteration.
+
+"""
 function log_time(x)
     if x[end].iteration == 0
         start_time[] .= time()
