@@ -17,9 +17,13 @@ end
 
 Load the example target `name` from the artifacts as voxelized array.
 
-Possible targets are:
+Those two targets are equal size in all dimensions:
 - `"3DBenchy_180"`
 - `"3DBenchy_550"`
+
+Those two are the original 3D Benchy objects with correct aspect ratio:
+- `"3DBenchy_120_aspect_ratio"`
+- `"3DBenchy_450_aspect_ratio"`
 """
 function load_example_target(name)
     artifacts_toml = abspath(joinpath(@__DIR__, "..", "Artifacts.toml"))
@@ -27,9 +31,13 @@ function load_example_target(name)
     image_dir = artifact_path(artifact_hash(name, artifacts_toml))
 
     if name == "3DBenchy_180"
-        return JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "benchy_100.jld2"), "target")
+        return Float32.(JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "benchy_100.jld2"), "target"))
     elseif name == "3DBenchy_550"
-        return JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "3D_benchy_550.jld2"), "target")
+        return Float32.(JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "3D_benchy_550.jld2"), "target"))
+    elseif name == "3DBenchy_120_aspect_ratio"
+        return Float32.(JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "3D_benchy_120_aspect_ratio.jld2"), "target"))
+    elseif name ==  "3DBenchy_450_aspect_ratio"
+        return Float32.(JLD2.load(joinpath(Pkg.Artifacts.@artifact_str(name), "3D_benchy_450_aspect_ratio.jld2"), "target"))
     else
         throw(ArgumentError("Unknown example target $name"))
     end
@@ -141,9 +149,10 @@ end
 Save all arguments into the path `fpath`.
 `fpath` should be a path.
 
+The `patterns` are saved as HDF5 file with the name `data.hdf5` if `skip_hdf5=false`.
 `overwrite=false` per default and does not overwrite existing files!
 """
-function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
+function save_patterns(fpath, patterns, printed, angles, target; overwrite=true, skip_hdf5=true)
     @assert size(angles, 1) == size(patterns, 2) "Size mismatch between angles and patterns"
     #@assert size(patterns, 1) == size(target, 1) "Size mismatch between target and patterns"
     #@assert size(patterns, 3) == size(target, 3) "Size mismatch between target and patterns"
@@ -163,13 +172,14 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
     if isfile(file) && overwrite==false
         throw(ArgumentError("HDF5 file exists already"))
     end
-
-    fid = h5open(file, "w")
-    fid["patterns"] = patterns
-    fid["printed"] = printed
-    fid["angle"] = angles
-    close(fid)
     
+    if skip_hdf5 == false
+        fid = h5open(file, "w")
+        fid["patterns"] = patterns
+        fid["printed"] = printed
+        fid["angle"] = angles
+        close(fid)
+    end 
     # create folder for png files
     fpath_images = joinpath(fpath, "patterns_png")
     isdir(fpath) || mkpath(fpath_images) 
@@ -202,7 +212,7 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true)
         save(fname, view(printed, :, :, i))
     end
 
-
+    @info "Saved patterns to $fpath"
 
     return 0
 end
