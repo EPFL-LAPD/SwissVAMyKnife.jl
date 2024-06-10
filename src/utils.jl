@@ -42,7 +42,7 @@ Units of `angles` and `f_wobble` should be the same.
 function correct_rotation_axis_wobbling(patterns, angles, f_wobble=ϕ -> 0)
     @assert size(patterns, 2) == size(angles, 1) "Size mismatch between angles and patterns"
     patterns_out = copy(patterns)
-    Threads.@threads for i in 1:size(patterns, 1)
+    Threads.@threads for i in 1:size(patterns, 2)
         φ = angles[i]
         patterns_out[:, i, :] .= @views circshift(patterns[:, i, :], (round(Int, f_wobble(φ)), 0))
     end
