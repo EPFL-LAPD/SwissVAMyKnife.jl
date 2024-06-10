@@ -11,6 +11,46 @@ function interpolate_patterns(patterns; N_angles, Nx, Ny)
 end
 
 
+"""
+    load_images_into_array(path)
+
+Load all images from the path `path` into an array.
+The images are loaded according to the file names and sorted by the file names.
+"""
+function load_images_into_array(path)
+    fnames = sort(readdir(path))
+    sz = size(Gray.(load(joinpath(path, fnames[1]))))
+
+    images = zeros(Float32, sz[1], length(fnames), sz[2])
+
+    Threads.@threads for i in 1:length(fnames)
+        images[:,  i, :] .= Gray.(load(joinpath(path, fnames[i])))
+    end
+
+    return images
+end
+
+
+"""
+    correct_rotation_axis_wobbling(patterns, angles, f_wobble=φ -> 0)
+
+This function corrects the wobbling of the rotation axis along the first dimension of the `patterns`.
+The shifting is integer pixel shifts
+The function `f_wobble` should return the wobbling distance from the center of the object in first dimension.
+Units of `angles` and `f_wobble` should be the same.
+"""
+function correct_rotation_axis_wobbling(patterns, angles, f_wobble=ϕ -> 0)
+    @assert size(patterns, 2) == size(angles, 1) "Size mismatch between angles and patterns"
+    patterns_out = copy(patterns)
+    Threads.@threads for i in 1:size(patterns, 1)
+        φ = angles[i]
+        patterns_out[:, i, :] .= @views circshift(patterns[:, i, :], (round(Int, f_wobble(φ)), 0))
+    end
+    
+    return patterns_out
+end
+
+
 
 """
     load_example_target(name)
