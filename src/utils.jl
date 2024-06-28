@@ -198,12 +198,12 @@ function save_patterns(fpath, patterns, printed, angles, target; overwrite=true,
     #@assert size(patterns, 3) == size(target, 3) "Size mismatch between target and patterns"
 
     # might be on GPU, move to CPU
-    patterns = Array(patterns)
-    patterns ./ maximum(patterns)
-    printed = Array(printed)
-    printed ./ maximum(printed)
+    patterns = patterns isa Array ? patterns : Array(patterns)
+    patterns = patterns ./ maximum(patterns)
+    printed = printed isa Array ? printed : Array(printed)
+    printed = printed ./ maximum(printed)
     angles = Array(angles)
-    target = Array(target)
+    target = target isa Array ? target : Array(target)
 
 
     # check if path exists, otherwise create
