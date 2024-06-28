@@ -1,7 +1,7 @@
 name = "SwissVAMyKnife"
 uuid = "fafdf525-54c7-48ec-ae29-528bd4cccfab"
 authors = ["roflmaostc <fxw+git@mailbox.org>"]
-version = "0.2.2"
+version = "0.2.3"
 
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
@@ -39,7 +39,7 @@ ImageIO = "0.6"
 ImageShow = "0.3"
 IndexFunArrays = "0.2"
 JLD2 = "0.4"
-NDTools = "0.5, 0.6"
+NDTools = "0.5, 0.6, 0.7"
 NNlib = "0.9"
 Optim = "1"
 Parameters = "0.12"
