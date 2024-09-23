@@ -1,6 +1,7 @@
 # SwissVAMyKnife.jl
 [![CI](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/actions/workflows/CI.yml) [![codecov](https://codecov.io/gh/EPFL-LAPD/SwissVAMyKnife.jl/graph/badge.svg?token=JZYHT3P3B7)](https://codecov.io/gh/EPFL-LAPD/SwissVAMyKnife.jl) [![Documentation for stable version](https://img.shields.io/badge/docs-stable-blue.svg)](https://epfl-lapd.github.io/SwissVAMyKnife.jl/stable) [![Documentation for development version](https://img.shields.io/badge/docs-main-blue.svg)](https://epfl-lapd.github.io/SwissVAMyKnife.jl/dev)
 
+
 [Tomographic Volumetric Additive Manufacturing](https://www.youtube.com/watch?v=ONBHkzimRbg) is a novel 3D printing technique
 which is based on a tomographic principle.
 Light is illuminated from different angles onto a glass vial which contains a photosensitive resin.
