@@ -1,3 +1,8 @@
+
+# ⚠️ Deprecation
+While still functional, for serious TVAM users we recommend our Python software Dr.TVAM which is more feature rich and mature: https://github.com/rgl-epfl/drtvam
+
+
 # SwissVAMyKnife.jl
 [![CI](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/EPFL-LAPD/SwissVAMyKnife.jl/actions/workflows/CI.yml) [![codecov](https://codecov.io/gh/EPFL-LAPD/SwissVAMyKnife.jl/graph/badge.svg?token=JZYHT3P3B7)](https://codecov.io/gh/EPFL-LAPD/SwissVAMyKnife.jl) [![Documentation for stable version](https://img.shields.io/badge/docs-stable-blue.svg)](https://epfl-lapd.github.io/SwissVAMyKnife.jl/stable) [![Documentation for development version](https://img.shields.io/badge/docs-main-blue.svg)](https://epfl-lapd.github.io/SwissVAMyKnife.jl/dev)
 
